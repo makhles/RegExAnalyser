@@ -1,5 +1,7 @@
 package model.regex;
 
+import model.automaton.Automaton;
+
 public class RegExTree {
 
     private RegEx root;
@@ -16,5 +18,11 @@ public class RegExTree {
 
     private void linkNodes() {
     	root.knit();
+    }
+
+    public Automaton convertToDFA() {
+        Automaton dfa = new Automaton();
+        
+        return dfa;
     }
 }
