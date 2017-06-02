@@ -6,6 +6,22 @@ public abstract class RegEx {
     protected Character data;
     protected RegEx left;
     protected RegEx right;
+    protected RegEx thread;
+
+    /**
+     * Knits the binary tree, turning it into a threaded binary tree.
+     * @return The node which will hold the thread.
+     */
+    public RegEx knit() {
+    	if (left != null) {
+    		RegEx predecessor = left.knit();
+    		predecessor.setThread(this);
+    	}
+    	if (right != null) {
+    		return right.knit();
+    	}
+    	return this;
+    }
 
     @Override
     public String toString() {
@@ -13,12 +29,10 @@ public abstract class RegEx {
         if (left != null) {
             print = left.toString();
             print += "(" + data + ") ";
-//            System.out.print("(" + data + ")");
         }
         if (right != null) {
             print += right.toString();
             print += "(" + data + ") ";
-//            System.out.print(" (" + data + ")");
         }
         print += data.toString();
         return print;
@@ -35,4 +49,12 @@ public abstract class RegEx {
     public RegEx getRight() {
         return right;
     }
+
+	public RegEx getThread() {
+		return thread;
+	}
+
+	public void setThread(RegEx thread) {
+		this.thread = thread;
+	}
 }
