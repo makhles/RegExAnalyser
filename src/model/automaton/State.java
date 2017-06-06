@@ -1,41 +1,44 @@
 package model.automaton;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
 public class State {
 
-    private Character id;
-    private boolean accepting;
-    private Map<Character, Set<State>> transitions;
+    private String label;
 
-    public State(Character id) {
-        this.id = id;
-        this.accepting = false;
-        transitions = new HashMap<>();
+    public State(String id) {
+        this.label = id;
     }
 
-    public void addTransition(Character c, Set<State> states) {
-        transitions.put(c, states);
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((label == null) ? 0 : label.hashCode());
+        return result;
     }
 
-    public Set<State> getTransitionWith(Character c) {
-        return transitions.get(c);
-    }
-    public Character getId() {
-        return id;
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (!(obj instanceof State))
+            return false;
+        State other = (State) obj;
+        if (label == null) {
+            if (other.label != null)
+                return false;
+        } else if (!label.equals(other.label))
+            return false;
+        return true;
     }
 
-    public void setId(Character id) {
-        this.id = id;
+    public String label() {
+        return label;
     }
 
-    public boolean isAccepting() {
-        return accepting;
-    }
-
-    public void setAccepting(boolean accepting) {
-        this.accepting = accepting;
+    @Override
+    public String toString() {
+        return label;
     }
 }

@@ -2,13 +2,18 @@ package model.regex;
 
 public class RegExParser {
 
+    private static RegExParser INSTANCE = new RegExParser();
     private String input;
 
-    public RegExParser(String input) {
-        this.input = input;
+    private RegExParser() {
     }
 
-    public RegExTree parse() {
+    public static RegExParser instance() {
+        return INSTANCE;
+    }
+
+    public RegExTree parse(String input) {
+        this.input = input;
         return new RegExTree(regex());
     }
 
@@ -51,7 +56,6 @@ public class RegExParser {
     }
 
     private RegEx term() {
-//        RegEx factor = RegEx.blank;
         RegEx factor = factor();
 
         while (more() && peek() != ')' && peek() != '|') {

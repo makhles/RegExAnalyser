@@ -1,5 +1,7 @@
 package model.regex;
 
+import java.util.Set;
+
 public abstract class RegEx {
 
     protected static RegEx blank = null;
@@ -10,17 +12,31 @@ public abstract class RegEx {
 
     /**
      * Knits the binary tree, turning it into a threaded binary tree.
+     * 
      * @return The node which will hold the thread.
      */
     public RegEx knit() {
-    	if (left != null) {
-    		RegEx predecessor = left.knit();
-    		predecessor.setThread(this);
-    	}
-    	if (right != null) {
-    		return right.knit();
-    	}
-    	return this;
+        if (left != null) {
+            RegEx predecessor = left.knit();
+            predecessor.setThread(this);
+        }
+        if (right != null) {
+            return right.knit();
+        }
+        return this;
+    }
+
+    protected abstract Set<RegEx> moveDown();
+
+    protected abstract Set<RegEx> moveUp();
+    
+    public void fillVocabulary(Set<Character> vocabulary) {
+        if (left != null) {
+            left.fillVocabulary(vocabulary);
+        }
+        if (right != null) {
+            right.fillVocabulary(vocabulary);
+        }
     }
 
     @Override
@@ -50,11 +66,11 @@ public abstract class RegEx {
         return right;
     }
 
-	public RegEx getThread() {
-		return thread;
-	}
+    public RegEx getThread() {
+        return thread;
+    }
 
-	public void setThread(RegEx thread) {
-		this.thread = thread;
-	}
+    public void setThread(RegEx thread) {
+        this.thread = thread;
+    }
 }
