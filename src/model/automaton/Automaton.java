@@ -11,7 +11,6 @@ public class Automaton {
 
     private State initialState;
     private List<Character> label;
-    private Set<State> states;
     private List<Character> vocabulary;
     private Set<State> acceptingStates;
 
@@ -19,7 +18,6 @@ public class Automaton {
 
     public Automaton(List<Character> vocabulary) {
         this.vocabulary = vocabulary;
-        states = new HashSet<>();
         transitions = new LinkedHashMap<>();
         acceptingStates = new HashSet<>();
         label = new LinkedList<>();
@@ -60,16 +58,9 @@ public class Automaton {
 
     public void addAcceptingState(State state) {
         acceptingStates.add(state);
-        addState(state);
-    }
-
-    public void addState(State state) {
-        states.add(state);
     }
 
     public void print() {
-//        Set<State> sortedStates = new LinkedHashSet<>(states);
-
         StringBuilder sbSymbols = new StringBuilder();
         StringBuilder sbLines = new StringBuilder();
 
@@ -81,6 +72,7 @@ public class Automaton {
             sbSymbols.append(symbol);
             sbLines.append("---");
         }
+
         sbLines.append("-");
         System.out.println(sbSymbols);
         System.out.println(sbLines);
@@ -103,7 +95,6 @@ public class Automaton {
             }
             System.out.println();
         }
-
         System.out.println(sbLines);
     }
 
