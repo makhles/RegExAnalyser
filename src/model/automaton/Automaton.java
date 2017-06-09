@@ -1,50 +1,33 @@
 package model.automaton;
 
 import java.util.HashSet;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class Automaton {
 
     private State initialState;
-    private final State errorState;
     private List<Character> label;
     private Set<State> states;
-    private Set<Character> vocabulary;
-    private Set<Transition> transitions;
+    private List<Character> vocabulary;
     private Set<State> acceptingStates;
 
-    public Automaton(Set<Character> vocabulary) {
+    private Map<State, List<State>> transitions;
+
+    public Automaton(List<Character> vocabulary) {
         this.vocabulary = vocabulary;
-        errorState = new State("-");
         states = new HashSet<>();
-        transitions = new HashSet<>();
+        transitions = new LinkedHashMap<>();
         acceptingStates = new HashSet<>();
         label = new LinkedList<>();
         label.add(0, '@');
     }
 
-    public void addTransition(State from, State to, Character c) {
-        if (to == null) {
-            transitions.add(new Transition(from, errorState, c));
-        } else {
-            transitions.add(new Transition(from, to, c));
-            if (!to.equals(from)) {
-                states.add(to);
-            }
-        }
-    }
-
-    public State getTransitionFrom(State fromState, Character symbol) {
-        State state = null;
-        for (Transition t : transitions) {
-            if (t.getFrom().equals(fromState) && t.getSymbol().equals(symbol)) {
-                state = t.getTo();
-            }
-        }
-        return state;
+    public void addTransitions(State fromState, List<State> toStates) {
+        transitions.put(fromState, toStates);
     }
 
     public String nextLabel() {
@@ -85,8 +68,7 @@ public class Automaton {
     }
 
     public void print() {
-        Set<Character> sortedVocabulary = new LinkedHashSet<>(vocabulary);
-        Set<State> sortedStates = new LinkedHashSet<>(states);
+//        Set<State> sortedStates = new LinkedHashSet<>(states);
 
         StringBuilder sbSymbols = new StringBuilder();
         StringBuilder sbLines = new StringBuilder();
@@ -94,7 +76,7 @@ public class Automaton {
         sbSymbols.append("        |");
         sbLines.append("--------+");
 
-        for (Character symbol : sortedVocabulary) {
+        for (Character symbol : vocabulary) {
             sbSymbols.append("  ");
             sbSymbols.append(symbol);
             sbLines.append("---");
@@ -103,7 +85,7 @@ public class Automaton {
         System.out.println(sbSymbols);
         System.out.println(sbLines);
 
-        for (State state : sortedStates) {
+        for (State state : transitions.keySet()) {
             if (state.equals(initialState)) {
                 System.out.print(" ->");
             } else {
@@ -115,8 +97,9 @@ public class Automaton {
                 System.out.print("  ");
             }
             System.out.print(" " + state.label() + " |");
-            for (Character symbol : sortedVocabulary) {
-                System.out.print("  " + getTransitionFrom(state, symbol).label());
+
+            for (State toState : transitions.get(state)) {
+                System.out.print("  " + toState.label());
             }
             System.out.println();
         }

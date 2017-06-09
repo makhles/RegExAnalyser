@@ -2,6 +2,7 @@ package model.automaton;
 
 public class State {
 
+    public static final State ERROR_STATE = new State("-");
     private String label;
 
     public State(String id) {

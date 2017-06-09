@@ -1,11 +1,14 @@
 package model.regex;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.TreeSet;
 
 import model.automaton.Automaton;
 import model.automaton.State;
@@ -20,7 +23,7 @@ public class RegExTree {
         this.root = root;
         lambda = new Lambda();
         linkNodes();
-        vocabulary = new HashSet<>();
+        vocabulary = new TreeSet<>();
         fillVocabulary(vocabulary);
     }
 
@@ -35,7 +38,7 @@ public class RegExTree {
     }
 
     public Automaton convertToDFA() {
-        Automaton dfa = new Automaton(vocabulary);
+        Automaton dfa = new Automaton(new ArrayList<>(vocabulary));
         Queue<State> pendingStates = new LinkedList<>();
         Map<State, Set<RegEx>> compositions = new HashMap<>();
         Set<RegEx> composition = root.moveDown();
@@ -46,6 +49,8 @@ public class RegExTree {
         compositions.put(currentState, composition);
 
         while (!pendingStates.isEmpty()) {
+
+            List<State> toStates = new ArrayList<>();
             currentState = pendingStates.poll();
             composition = compositions.get(currentState);
 
@@ -70,22 +75,26 @@ public class RegExTree {
                     boolean shouldCreateNewState = true;
                     for (Map.Entry<State, Set<RegEx>> entryComposition : compositions.entrySet()) {
                         if (newComposition.equals(entryComposition.getValue())) {
-                            dfa.addTransition(currentState, entryComposition.getKey(), symbol);
+//                            dfa.addTransition(currentState, entryComposition.getKey(), symbol);
+                            toStates.add(entryComposition.getKey());
                             shouldCreateNewState = false;
                             break;
                         }
                     }
                     if (shouldCreateNewState) {
                         State state = new State(dfa.nextLabel());
-                        dfa.addTransition(currentState, state, symbol);
+//                        dfa.addTransition(currentState, state, symbol);
+                        toStates.add(state);
                         compositions.put(state, newComposition);
                         pendingStates.add(state);
                     }
                 } else {
                     // Transition to the error state
-                    dfa.addTransition(currentState, null, symbol);
+//                    dfa.addTransition(currentState, null, symbol);
+                    toStates.add(State.ERROR_STATE);
                 }
             }
+            dfa.addTransitions(currentState, toStates);
         }
         return dfa;
     }
