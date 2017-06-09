@@ -2,18 +2,13 @@ package model.regex;
 
 public class RegExParser {
 
-    private static RegExParser INSTANCE = new RegExParser();
     private String input;
 
-    private RegExParser() {
-    }
-
-    public static RegExParser instance() {
-        return INSTANCE;
-    }
-
-    public RegExTree parse(String input) {
+    public RegExParser(String input) {
         this.input = input;
+    }
+
+    public RegExTree parse() {
         return new RegExTree(regex());
     }
 
@@ -103,7 +98,7 @@ public class RegExParser {
             break;
 
         default:
-            base = new Primitive(next());
+            base = new Primitive(String.valueOf(next()));
             break;
         }
 

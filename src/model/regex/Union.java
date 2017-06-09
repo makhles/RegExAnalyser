@@ -7,7 +7,7 @@ public class Union extends RegEx {
     public Union(RegEx left, RegEx right) {
         this.left = left;
         this.right = right;
-        this.data = '|';
+        this.data = "|";
     }
 
     @Override

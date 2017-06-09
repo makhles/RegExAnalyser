@@ -7,23 +7,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class Automaton {
+public abstract class Automaton {
 
-    private State initialState;
-    private List<Character> label;
-    private List<Character> vocabulary;
-    private Set<State> acceptingStates;
+    protected State initialState;
+    protected List<Character> label;
+    protected List<String> vocabulary;
+    protected Set<State> acceptingStates;
+    protected Map<State, List<State>> transitions;
 
-    private Map<State, List<State>> transitions;
+    public Automaton() {
+        init();
+    }
 
-    public Automaton(List<Character> vocabulary) {
+    public Automaton(List<String> vocabulary) {
         this.vocabulary = vocabulary;
-        transitions = new LinkedHashMap<>();
-        acceptingStates = new HashSet<>();
+        init();
         label = new LinkedList<>();
         label.add(0, '@');
     }
 
+    private void init() {
+        transitions = new LinkedHashMap<>();
+        acceptingStates = new HashSet<>();
+    }
+    
     public void addTransitions(State fromState, List<State> toStates) {
         transitions.put(fromState, toStates);
     }
@@ -52,6 +59,10 @@ public class Automaton {
         return sb.toString();
     }
 
+    public void setVocabulary(List<String> vocabulary) {
+        this.vocabulary = vocabulary;
+    }
+
     public void setInitialState(State state) {
         initialState = state;
     }
@@ -67,7 +78,7 @@ public class Automaton {
         sbSymbols.append("        |");
         sbLines.append("--------+");
 
-        for (Character symbol : vocabulary) {
+        for (String symbol : vocabulary) {
             sbSymbols.append("  ");
             sbSymbols.append(symbol);
             sbLines.append("---");
@@ -97,5 +108,7 @@ public class Automaton {
         }
         System.out.println(sbLines);
     }
+
+    public abstract Automaton minimize();
 
 }

@@ -8,7 +8,7 @@ public class Lambda extends RegEx {
     public Lambda() {
         left = null;
         right = null;
-        this.data = '&';
+        this.data = "lambda";
     }
 
     @Override

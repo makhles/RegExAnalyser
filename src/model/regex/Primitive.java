@@ -5,7 +5,7 @@ import java.util.Set;
 
 public class Primitive extends RegEx {
 
-    public Primitive(char data) {
+    public Primitive(String data) {
         left = null;
         right = null;
         this.data = data;
@@ -24,7 +24,7 @@ public class Primitive extends RegEx {
     }
 
     @Override
-    public void fillVocabulary(Set<Character> vocabulary) {
+    public void fillVocabulary(Set<String> vocabulary) {
         vocabulary.add(data);
     }
 }

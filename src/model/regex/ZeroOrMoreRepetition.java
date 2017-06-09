@@ -7,7 +7,7 @@ public class ZeroOrMoreRepetition extends RegEx {
     public ZeroOrMoreRepetition(RegEx left) {
         this.left = left;
         this.right = null;
-        this.data = '*';
+        this.data = "*";
     }
 
     @Override

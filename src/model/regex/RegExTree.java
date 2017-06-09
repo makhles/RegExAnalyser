@@ -16,7 +16,7 @@ import model.automaton.State;
 public class RegExTree {
 
     private RegEx root;
-    private Set<Character> vocabulary;
+    private Set<String> vocabulary;
     private RegEx lambda;
 
     public RegExTree(RegEx root) {
@@ -56,11 +56,9 @@ public class RegExTree {
 
             if (composition.contains(lambda)) {
                 dfa.addAcceptingState(currentState);
-            } else {
-                dfa.addState(currentState);
             }
 
-            for (Character symbol : vocabulary) {
+            for (String symbol : vocabulary) {
                 Set<RegEx> symbolNodes = new HashSet<>();
                 for (RegEx node : composition) {
                     if (node.data.equals(symbol)) {
@@ -75,7 +73,6 @@ public class RegExTree {
                     boolean shouldCreateNewState = true;
                     for (Map.Entry<State, Set<RegEx>> entryComposition : compositions.entrySet()) {
                         if (newComposition.equals(entryComposition.getValue())) {
-//                            dfa.addTransition(currentState, entryComposition.getKey(), symbol);
                             toStates.add(entryComposition.getKey());
                             shouldCreateNewState = false;
                             break;
@@ -83,14 +80,11 @@ public class RegExTree {
                     }
                     if (shouldCreateNewState) {
                         State state = new State(dfa.nextLabel());
-//                        dfa.addTransition(currentState, state, symbol);
                         toStates.add(state);
                         compositions.put(state, newComposition);
                         pendingStates.add(state);
                     }
                 } else {
-                    // Transition to the error state
-//                    dfa.addTransition(currentState, null, symbol);
                     toStates.add(State.ERROR_STATE);
                 }
             }
@@ -99,7 +93,7 @@ public class RegExTree {
         return dfa;
     }
 
-    private void fillVocabulary(Set<Character> vocabulary) {
+    private void fillVocabulary(Set<String> vocabulary) {
         root.fillVocabulary(vocabulary);
     }
 }

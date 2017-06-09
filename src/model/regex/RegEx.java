@@ -5,7 +5,7 @@ import java.util.Set;
 public abstract class RegEx {
 
     protected static RegEx blank = null;
-    protected Character data;
+    protected String data;
     protected RegEx left;
     protected RegEx right;
     protected RegEx thread;
@@ -30,7 +30,7 @@ public abstract class RegEx {
 
     protected abstract Set<RegEx> moveUp();
     
-    public void fillVocabulary(Set<Character> vocabulary) {
+    public void fillVocabulary(Set<String> vocabulary) {
         if (left != null) {
             left.fillVocabulary(vocabulary);
         }
@@ -50,11 +50,11 @@ public abstract class RegEx {
             print += right.toString();
             print += "(" + data + ") ";
         }
-        print += data.toString();
+        print += data;
         return print;
     }
 
-    public Character getData() {
+    public String getData() {
         return data;
     }
 
