@@ -1,17 +1,12 @@
 package controller;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import model.automaton.Automaton;
-import model.automaton.NDFA;
-import model.automaton.NDFAe;
-import model.automaton.State;
 import model.regex.RegExParser;
 
 public class Controller {
@@ -22,6 +17,7 @@ public class Controller {
     private List<Automaton> automatons;
 
     private Controller() {
+        automatons = new ArrayList<>();
     }
 
     public static Controller instance() {
@@ -33,30 +29,47 @@ public class Controller {
         automaton.print();
     }
 
-    public void createAutomaton(List<Boolean> initial, List<Boolean> accepting, List<List<String>> inputTable) {
-        AutomatonBuilder builder = new AutomatonBuilder();
-        builder.addVocabulary(inputTable.get(0).subList(1, inputTable.get(0).size()));
-
-        for (int row = 1; row < inputTable.size(); row++) {
-            List<String> rowSymbols = inputTable.get(row);
-            List<String> toLabels = rowSymbols.subList(1, rowSymbols.size());
-            builder.addTransitions(rowSymbols.get(0), toLabels, initial.get(row - 1), accepting.get(row - 1));
+    /**
+     * Creates a new automaton.
+     * @param vocabulary - the list of symbols.
+     * @param transitionsTable - the table of transitions.
+     * @param accepting - the list with the accepting states.
+     * @param initial - the initial state.
+     * @return The id of this automaton.
+     */
+    public int createAutomaton(List<String> vocabulary, List<List<String>> transitionsTable, List<String> accepting,
+            String initial) {
+        lastAutomaton = new Automaton(vocabulary);
+        for (int row = 1; row < transitionsTable.size(); row++) {
+            String fromState = transitionsTable.get(row).get(0);
+            if (accepting.contains(fromState)) {
+                lastAutomaton.addAcceptingState(fromState);
+            }
+            List<Set<String>> toStates = new ArrayList<>();
+            for (int col = 1; col < transitionsTable.get(row).size(); col++) {
+                Set<String> toStateSet = new TreeSet<>();
+                String toState = transitionsTable.get(row).get(col);
+                Collections.addAll(toStateSet, toState.trim().split("\\s*,\\s*"));
+                toStates.add(toStateSet);
+            }
+            lastAutomaton.addTransitions(fromState, toStates);
         }
-        lastAutomaton = builder.buildAutomaton();
-        automatons.add(lastAutomaton);
+        lastAutomaton.setInitialState(initial);
+        return addAutomaton(lastAutomaton);
     }
 
-    public void convertNDFAtoDFA(int index) {
-        Automaton automaton = automatons.get(index);
-        if (automaton instanceof NDFA) {
-            NDFA ndfa = (NDFA) automaton;
-            automatons.add(ndfa.toDFA());
-        } else if (automaton instanceof NDFAe) {
-            NDFAe ndfae = (NDFAe) automaton;
-            automatons.add(ndfae.toDFA());
-        } else {
-            System.out.println("Automaton is already a DFA.");
-        }
+    /**
+     * Adds the automaton to the list of automatons and return its index.
+     * @param automaton - the automaton to be added.
+     * @return the index of the newly added automaton in the list.
+     */
+    private int addAutomaton(Automaton automaton) {
+        automatons.add(lastAutomaton);
+        return automatons.size()-1;
+    }
+
+    public int convertNDFAtoDFA(int index) {
+        return addAutomaton(automatons.get(index).toDFA());
     }
 
     public void printAutomaton() {

@@ -1,14 +1,8 @@
 package test;
 
-import static org.junit.Assert.*;
-
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Test;
-
-import controller.AutomatonBuilder;
 import controller.Controller;
 import model.automaton.Automaton;
 import model.regex.RegExParser;
@@ -23,7 +17,6 @@ public class TestAutomaton {
 
     private static void createAutomaton() {
         List<String> vocabulary = new ArrayList<>();
-        vocabulary.add("");
         vocabulary.add("a");
         vocabulary.add("b");
         vocabulary.add("c");
@@ -47,16 +40,11 @@ public class TestAutomaton {
         table.add(fromA);
         table.add(fromB);
         table.add(fromC);
-        List<Boolean> initial = new ArrayList<>();
-        initial.add(true);
-        initial.add(false);
-        initial.add(false);
-        List<Boolean> accepting = new ArrayList<>();
-        accepting.add(false);
-        accepting.add(true);
-        accepting.add(true);
+        List<String> accepting = new ArrayList<>();
+        accepting.add("B");
+        accepting.add("C");
         Controller control = Controller.instance();
-        control.createAutomaton(initial, accepting, table);
+        control.createAutomaton(vocabulary, table, accepting, "A");
         control.printAutomaton();
     }
 

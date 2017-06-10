@@ -7,13 +7,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public abstract class Automaton {
+public class Automaton {
 
-    protected State initialState;
+    public final static String ERROR_STATE = "-";
+    public final static String EPSILON = "&";
+
+    protected String initialState;
     protected List<Character> label;
     protected List<String> vocabulary;
-    protected Set<State> acceptingStates;
-    protected Map<State, List<State>> transitions;
+    protected Set<String> acceptingStates;
+    protected Map<String, List<Set<String>>> transitions;
 
     public Automaton() {
         init();
@@ -30,9 +33,9 @@ public abstract class Automaton {
         transitions = new LinkedHashMap<>();
         acceptingStates = new HashSet<>();
     }
-    
-    public void addTransitions(State fromState, List<State> toStates) {
-        transitions.put(fromState, toStates);
+
+    public void addTransitions(String fromString, List<Set<String>> toStates) {
+        transitions.put(fromString, toStates);
     }
 
     public String nextLabel() {
@@ -63,14 +66,18 @@ public abstract class Automaton {
         this.vocabulary = vocabulary;
     }
 
-    public void setInitialState(State state) {
+    public void setInitialState(String state) {
         initialState = state;
     }
 
-    public void addAcceptingState(State state) {
+    public void addAcceptingState(String state) {
         acceptingStates.add(state);
     }
 
+    public void setTransitions(Map<String, List<Set<String>>> transitions) {
+        this.transitions = transitions;
+    }
+    
     public void print() {
         StringBuilder sbSymbols = new StringBuilder();
         StringBuilder sbLines = new StringBuilder();
@@ -88,7 +95,7 @@ public abstract class Automaton {
         System.out.println(sbSymbols);
         System.out.println(sbLines);
 
-        for (State state : transitions.keySet()) {
+        for (String state : transitions.keySet()) {
             if (state.equals(initialState)) {
                 System.out.print(" ->");
             } else {
@@ -99,16 +106,24 @@ public abstract class Automaton {
             } else {
                 System.out.print("  ");
             }
-            System.out.print(" " + state.label() + " |");
+            System.out.print(" " + state + " |");
 
-            for (State toState : transitions.get(state)) {
-                System.out.print("  " + toState.label());
+            for (Set<String> toStates : transitions.get(state)) {
+                System.out.print("  " + toStates);
             }
             System.out.println();
         }
         System.out.println(sbLines);
     }
 
-    public abstract Automaton minimize();
+    public Automaton minimize() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public Automaton toDFA() {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
 }
