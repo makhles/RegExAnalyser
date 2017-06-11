@@ -1,19 +1,36 @@
 package model.automaton;
 
+import java.util.Set;
+import java.util.TreeSet;
+
 public class State {
 
     public static final State ERROR_STATE = new State("-");
-    private String label;
+    private Set<String> id;
 
-    public State(String id) {
-        this.label = id;
+    public State(String label) {
+        id = new TreeSet<>();
+        id.add(label);
+    }
+
+    public State(Set<String> id) {
+        this.id = id;
+    }
+
+    public Set<String> id() {
+        return id;
+    }
+
+    @Override
+    public String toString() {
+        return id.toString();
     }
 
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((label == null) ? 0 : label.hashCode());
+        result = prime * result + ((id == null) ? 0 : id.hashCode());
         return result;
     }
 
@@ -26,20 +43,15 @@ public class State {
         if (!(obj instanceof State))
             return false;
         State other = (State) obj;
-        if (label == null) {
-            if (other.label != null)
+        if (id == null) {
+            if (other.id != null)
                 return false;
-        } else if (!label.equals(other.label))
+        } else if (!id.equals(other.id))
             return false;
         return true;
     }
 
-    public String label() {
-        return label;
-    }
-
-    @Override
-    public String toString() {
-        return label;
+    public void addLabels(Set<String> labels) {
+        id.addAll(labels);
     }
 }

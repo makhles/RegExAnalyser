@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import model.automaton.Automaton;
+import model.automaton.State;
 
 public class RegExTree {
 
@@ -26,6 +27,10 @@ public class RegExTree {
         fillVocabulary(vocabulary);
     }
 
+    private void fillVocabulary(Set<String> vocabulary) {
+        root.fillVocabulary(vocabulary);
+    }
+
     @Override
     public String toString() {
         return root.toString();
@@ -37,30 +42,29 @@ public class RegExTree {
     }
 
     public Automaton convertToDFA() {
+        Map<State, Set<RegEx>> compositions = new HashMap<>();
+        Queue<State> pendingStates = new LinkedList<>();
+        Set<RegEx> currentComposition = root.moveDown();
         Automaton dfa = new Automaton(new ArrayList<>(vocabulary));
-        Queue<String> pendingStates = new LinkedList<>();
-        Map<String, Set<RegEx>> compositions = new HashMap<>();
-        Set<RegEx> composition = root.moveDown();
-        String currentState = dfa.nextLabel();
+        State currentState = new State(dfa.nextLabel());
 
         dfa.setInitialState(currentState);
         pendingStates.add(currentState);
-        compositions.put(currentState, composition);
+        compositions.put(currentState, currentComposition);
 
         while (!pendingStates.isEmpty()) {
 
-            List<Set<String>> toStates = new ArrayList<>();
+            List<State> toStates = new ArrayList<>();
             currentState = pendingStates.poll();
-            composition = compositions.get(currentState);
+            currentComposition = compositions.get(currentState);
 
-            if (composition.contains(lambda)) {
+            if (currentComposition.contains(lambda)) {
                 dfa.addAcceptingState(currentState);
             }
 
-            Set<String> stateSet = new HashSet<>();
             for (String symbol : vocabulary) {
                 Set<RegEx> symbolNodes = new HashSet<>();
-                for (RegEx node : composition) {
+                for (RegEx node : currentComposition) {
                     if (node.data.equals(symbol)) {
                         symbolNodes.add(node);
                     }
@@ -71,32 +75,25 @@ public class RegExTree {
                         newComposition.addAll(node.moveUp());
                     }
                     boolean shouldCreateNewState = true;
-                    for (Map.Entry<String, Set<RegEx>> entryComposition : compositions.entrySet()) {
-                        if (newComposition.equals(entryComposition.getValue())) {
-                            stateSet.add(entryComposition.getKey());
-                            toStates.add(stateSet);
+                    for (Map.Entry<State, Set<RegEx>> composition : compositions.entrySet()) {
+                        if (newComposition.equals(composition.getValue())) {
+                            toStates.add(composition.getKey());
                             shouldCreateNewState = false;
                             break;
                         }
                     }
                     if (shouldCreateNewState) {
-                        String state = dfa.nextLabel();
-                        stateSet.add(state);
-                        toStates.add(stateSet);
+                        State state = new State(dfa.nextLabel());
+                        toStates.add(state);
                         compositions.put(state, newComposition);
                         pendingStates.add(state);
                     }
                 } else {
-                    stateSet.add(Automaton.ERROR_STATE);
-                    toStates.add(stateSet);
+                    toStates.add(State.ERROR_STATE);
                 }
             }
             dfa.addTransitions(currentState, toStates);
         }
         return dfa;
-    }
-
-    private void fillVocabulary(Set<String> vocabulary) {
-        root.fillVocabulary(vocabulary);
     }
 }

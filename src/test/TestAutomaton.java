@@ -1,6 +1,7 @@
 package test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import controller.Controller;
@@ -13,39 +14,42 @@ public class TestAutomaton {
     public static void main(String[] args) {
 //        printAutomaton();
         createAutomaton();
+        testClosure();
+    }
+
+    private static List<List<String>> table() {
+        List<List<String>> table = new ArrayList<>();
+
+//        table.add(Arrays.asList("a", "b", "c"));
+//        table.add(Arrays.asList(" ", "A", "B", "C", "D"));
+//        table.add(Arrays.asList("*", "B", " C,D", "-", "D"));
+//        table.add(Arrays.asList("*", "C", "A", "A", "-"));
+//        table.add(Arrays.asList(" ", "D", "-", "A, B, C", "C"));
+        
+//        table.add(Arrays.asList("a", "b", "c", "&"));
+//        table.add(Arrays.asList(" ", "A", "A", "B", "-", "B,C"));
+//        table.add(Arrays.asList(" ", "B", "C", "-", "A,B", "-"));
+//        table.add(Arrays.asList("*", "C", "A", "C", "C", "B"));
+
+        table.add(Arrays.asList("a", "b", "c", "&"));
+        table.add(Arrays.asList(" ", "1", "2", "-", "4", "-"));
+        table.add(Arrays.asList(" ", "2", "-", "3", "-", "1"));
+        table.add(Arrays.asList("*", "3", "2", "-", "-", "-"));
+        table.add(Arrays.asList("*", "4", "-", "-", "3", "3"));
+
+        return table;
+    }
+    private static void testClosure() {
+        Controller control = Controller.instance();
+        int index = control.createAutomaton(table(), "A");
+        System.out.println("NDFA closure:");
+        control.convertNDFAtoDFA(index);
     }
 
     private static void createAutomaton() {
-        List<String> vocabulary = new ArrayList<>();
-        vocabulary.add("a");
-        vocabulary.add("b");
-        vocabulary.add("c");
-        List<String> fromA = new ArrayList<>();
-        fromA.add("A");
-        fromA.add("A");
-        fromA.add("B");
-        fromA.add("C");
-        List<String> fromB = new ArrayList<>();
-        fromB.add("B");
-        fromB.add("B");
-        fromB.add("-");
-        fromB.add("C");
-        List<String> fromC = new ArrayList<>();
-        fromC.add("C");
-        fromC.add("B");
-        fromC.add("A");
-        fromC.add("C");
-        List<List<String>> table = new ArrayList<>();
-        table.add(vocabulary);
-        table.add(fromA);
-        table.add(fromB);
-        table.add(fromC);
-        List<String> accepting = new ArrayList<>();
-        accepting.add("B");
-        accepting.add("C");
         Controller control = Controller.instance();
-        control.createAutomaton(vocabulary, table, accepting, "A");
-        control.printAutomaton();
+        int index = control.createAutomaton(table(), "A");
+        control.printAutomaton(index);
     }
 
     private static void printAutomaton() {

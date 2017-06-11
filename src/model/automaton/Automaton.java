@@ -5,18 +5,19 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
+import java.util.TreeSet;
 
 public class Automaton {
 
-    public final static String ERROR_STATE = "-";
     public final static String EPSILON = "&";
 
-    protected String initialState;
-    protected List<Character> label;
-    protected List<String> vocabulary;
-    protected Set<String> acceptingStates;
-    protected Map<String, List<Set<String>>> transitions;
+    private State initialState;
+    private List<Character> label;
+    private List<String> vocabulary;
+    private Set<State> acceptingStates;
+    private Map<State, List<State>> transitions;
 
     public Automaton() {
         init();
@@ -34,8 +35,99 @@ public class Automaton {
         acceptingStates = new HashSet<>();
     }
 
-    public void addTransitions(String fromString, List<Set<String>> toStates) {
-        transitions.put(fromString, toStates);
+    public void addTransitions(State fromState, List<State> toStates) {
+        transitions.put(fromState, toStates);
+    }
+
+    public void setVocabulary(List<String> vocabulary) {
+        this.vocabulary = vocabulary;
+    }
+
+    public void setInitialState(State state) {
+        initialState = state;
+    }
+
+    public void addAcceptingState(State state) {
+        acceptingStates.add(state);
+    }
+
+    public void setAcceptingStates(Set<State> acceptingStates) {
+        this.acceptingStates = acceptingStates;
+    }
+
+    public List<String> vocabulary() {
+        return vocabulary;
+    }
+
+    public Set<State> states() {
+        return transitions.keySet();
+    }
+
+    public State transitionFrom(State fromState, String symbol) {
+        int index = vocabulary.indexOf(symbol);
+        return transitions.get(fromState).get(index);
+    }
+
+    public State transitionFrom(State state, int index) {
+        return transitions.get(state).get(index);
+    }
+
+    public State epsilonClosure(State fromState) {
+        Queue<String> pendingLabels = new LinkedList<>();
+        Set<String> closure = new TreeSet<>();
+        State stateFound = null;
+        int index = vocabulary.indexOf(EPSILON);
+
+        closure.addAll(fromState.id());
+        pendingLabels.addAll(fromState.id());
+
+        while (!pendingLabels.isEmpty()) {
+            String label = pendingLabels.poll();
+            stateFound = transitionFrom(new State(label), index);
+            if (!stateFound.equals(State.ERROR_STATE)) {
+                closure.addAll(stateFound.id());
+                pendingLabels.addAll(stateFound.id());
+            }
+        }
+        return new State(closure);
+    }
+
+    public void print() {
+        StringBuilder sbSymbols = new StringBuilder();
+        StringBuilder sbLines = new StringBuilder();
+
+        sbSymbols.append("  S F     |");
+        sbLines.append("----------+");
+
+        for (String symbol : vocabulary) {
+            sbSymbols.append("  ");
+            sbSymbols.append(symbol);
+            sbLines.append("----");
+        }
+
+        sbLines.append("-");
+        System.out.println(sbSymbols);
+        System.out.println(sbLines);
+
+        for (State state : transitions.keySet()) {
+            if (state.equals(initialState)) {
+                System.out.print(" ->");
+            } else {
+                System.out.print("   ");
+            }
+            if (acceptingStates.contains(state)) {
+                System.out.print(" *");
+            } else {
+                System.out.print("  ");
+            }
+            System.out.print(" " + state + " |");
+
+            for (State toState : transitions.get(state)) {
+                System.out.print(" " + toState);
+            }
+            System.out.println();
+        }
+        System.out.println(sbLines);
     }
 
     public String nextLabel() {
@@ -60,70 +152,6 @@ public class Automaton {
             sb.append(c);
         }
         return sb.toString();
-    }
-
-    public void setVocabulary(List<String> vocabulary) {
-        this.vocabulary = vocabulary;
-    }
-
-    public void setInitialState(String state) {
-        initialState = state;
-    }
-
-    public void addAcceptingState(String state) {
-        acceptingStates.add(state);
-    }
-
-    public void setTransitions(Map<String, List<Set<String>>> transitions) {
-        this.transitions = transitions;
-    }
-    
-    public void print() {
-        StringBuilder sbSymbols = new StringBuilder();
-        StringBuilder sbLines = new StringBuilder();
-
-        sbSymbols.append("        |");
-        sbLines.append("--------+");
-
-        for (String symbol : vocabulary) {
-            sbSymbols.append("  ");
-            sbSymbols.append(symbol);
-            sbLines.append("---");
-        }
-
-        sbLines.append("-");
-        System.out.println(sbSymbols);
-        System.out.println(sbLines);
-
-        for (String state : transitions.keySet()) {
-            if (state.equals(initialState)) {
-                System.out.print(" ->");
-            } else {
-                System.out.print("   ");
-            }
-            if (acceptingStates.contains(state)) {
-                System.out.print(" *");
-            } else {
-                System.out.print("  ");
-            }
-            System.out.print(" " + state + " |");
-
-            for (Set<String> toStates : transitions.get(state)) {
-                System.out.print("  " + toStates);
-            }
-            System.out.println();
-        }
-        System.out.println(sbLines);
-    }
-
-    public Automaton minimize() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    public Automaton toDFA() {
-        // TODO Auto-generated method stub
-        return null;
     }
 
 }
