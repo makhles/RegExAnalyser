@@ -13,7 +13,7 @@ public class TestAutomaton {
 
     public static void main(String[] args) {
 //        printAutomaton();
-        createAutomaton();
+//        createAutomaton();
         testClosure();
     }
 
@@ -26,29 +26,32 @@ public class TestAutomaton {
 //        table.add(Arrays.asList("*", "C", "A", "A", "-"));
 //        table.add(Arrays.asList(" ", "D", "-", "A, B, C", "C"));
         
-//        table.add(Arrays.asList("a", "b", "c", "&"));
-//        table.add(Arrays.asList(" ", "A", "A", "B", "-", "B,C"));
-//        table.add(Arrays.asList(" ", "B", "C", "-", "A,B", "-"));
-//        table.add(Arrays.asList("*", "C", "A", "C", "C", "B"));
-
         table.add(Arrays.asList("a", "b", "c", "&"));
-        table.add(Arrays.asList(" ", "1", "2", "-", "4", "-"));
-        table.add(Arrays.asList(" ", "2", "-", "3", "-", "1"));
-        table.add(Arrays.asList("*", "3", "2", "-", "-", "-"));
-        table.add(Arrays.asList("*", "4", "-", "-", "3", "3"));
+        table.add(Arrays.asList(" ", "A", "A", "B", "-", "B,C"));
+        table.add(Arrays.asList(" ", "B", "C", "-", "A,B", "-"));
+        table.add(Arrays.asList("*", "C", "A", "C", "C", "B"));
+
+//        table.add(Arrays.asList("a", "b", "c", "&"));
+//        table.add(Arrays.asList(" ", "1", "2", "-", "4", "-"));
+//        table.add(Arrays.asList(" ", "2", "-", "3", "-", "1"));
+//        table.add(Arrays.asList("*", "3", "2", "-", "-", "-"));
+//        table.add(Arrays.asList("*", "4", "-", "-", "3", "3"));
 
         return table;
     }
     private static void testClosure() {
         Controller control = Controller.instance();
-        int index = control.createAutomaton(table(), "A");
-        System.out.println("NDFA closure:");
-        control.convertNDFAtoDFA(index);
+        List<List<String>> table = table();
+        int index = control.createAutomaton(table, table.get(1).get(1));
+        control.printAutomaton(index);
+        index = control.convertNFAtoDFA(index);
+        control.printAutomaton(index);
     }
 
     private static void createAutomaton() {
         Controller control = Controller.instance();
-        int index = control.createAutomaton(table(), "A");
+        List<List<String>> table = table();
+        int index = control.createAutomaton(table, table.get(1).get(1));
         control.printAutomaton(index);
     }
 

@@ -51,12 +51,20 @@ public class Automaton {
         acceptingStates.add(state);
     }
 
+    public Set<State> acceptingStates() {
+        return acceptingStates;
+    }
+
     public void setAcceptingStates(Set<State> acceptingStates) {
         this.acceptingStates = acceptingStates;
     }
 
     public List<String> vocabulary() {
         return vocabulary;
+    }
+
+    public State initial() {
+        return initialState;
     }
 
     public Set<State> states() {

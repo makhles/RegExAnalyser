@@ -17,6 +17,10 @@ public class State {
         this.id = id;
     }
 
+    public State(State state) {
+        this.id = new TreeSet<>(state.id);
+    }
+
     public Set<String> id() {
         return id;
     }

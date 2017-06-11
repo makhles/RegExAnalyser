@@ -3,8 +3,11 @@ package controller;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -33,11 +36,10 @@ public class Controller {
     }
 
     /**
-     * Creates an automaton based on the given table and initial state. The
-     * table should be formatted as such: the first row contains the vocabulary.
-     * The second and following rows have a "*" in the first column if that is
-     * an accepting state, followed by the state label in the second column. In
-     * each subsequent column is the state to which the first state of that row
+     * Creates an automaton based on the given table and initial state. The table should be
+     * formatted as such: the first row contains the vocabulary. The second and following rows have
+     * a "*" in the first column if that is an accepting state, followed by the state label in the
+     * second column. In each subsequent column is the state to which the first state of that row
      * goes to through the symbol in the respective column of the first row.
      * 
      * @param table
@@ -70,39 +72,6 @@ public class Controller {
         return addAutomaton(lastAutomaton);
     }
 
-    // /**
-    // * Creates a new automaton.
-    // * @param vocabulary - the list of symbols.
-    // * @param transitionsTable - the table of transitions.
-    // * @param accepting - the list with the accepting states.
-    // * @param initial - the initial state.
-    // * @return The id of this automaton.
-    // */
-    // public int createAutomaton(List<String> vocabulary, List<List<String>>
-    // transitionsTable, List<String> accepting,
-    // String initial) {
-    // lastAutomaton = new Automaton(vocabulary);
-    // for (int row = 1; row < transitionsTable.size(); row++) {
-    // Set<String> fromState = new TreeSet<>();
-    // fromState.add(transitionsTable.get(row).get(0));
-    // if (accepting.contains(fromState)) {
-    // lastAutomaton.addAcceptingState(fromState);
-    // }
-    // List<Set<String>> toStates = new ArrayList<>();
-    // for (int col = 1; col < transitionsTable.get(row).size(); col++) {
-    // Set<String> toStateSet = new TreeSet<>();
-    // String toState = transitionsTable.get(row).get(col);
-    // Collections.addAll(toStateSet, toState.trim().split("\\s*,\\s*"));
-    // toStates.add(toStateSet);
-    // }
-    // lastAutomaton.addTransitions(fromState, toStates);
-    // }
-    // Set<String> initialState = new TreeSet<>();
-    // initialState.add(initial);
-    // lastAutomaton.setInitialState(initialState);
-    // return addAutomaton(lastAutomaton);
-    // }
-
     /**
      * Adds the automaton to the list of automatons and return its index.
      * 
@@ -111,33 +80,88 @@ public class Controller {
      * @return the index of the newly added automaton in the list.
      */
     private int addAutomaton(Automaton automaton) {
-        automatons.add(lastAutomaton);
+        automatons.add(automaton);
         return automatons.size() - 1;
     }
 
-    public int convertNDFAtoDFA(int index) {
-        Automaton ndfa = automatons.get(index);
-        Automaton dfa = null;
-        boolean epsilonFree = true;
-        List<String> vocabulary = ndfa.vocabulary();
-        int epsilon = vocabulary.indexOf(Automaton.EPSILON);
+    public int convertNFAtoDFA(int index) {
+        Automaton nfa = automatons.get(index);
+        List<String> vocabulary = new ArrayList<>(nfa.vocabulary());
+        Map<State, State> closures = null;
+        boolean hasEpsilon = vocabulary.remove(Automaton.EPSILON);
+        Automaton dfa = new Automaton(vocabulary);
 
-        if (epsilon != -1) {
-            epsilonFree = false;
-            // Finds the Epsilon-closure
-            Map<State,State> closures = new HashMap<>();
-            for (State state : ndfa.states()) {
-                State closure = ndfa.epsilonClosure(state);
-                closures.put(state, closure);
-                System.out.println(closure);
-            }
+        if (hasEpsilon) {
+            closures = epsilonClosuresFor(nfa);
         }
         
+        Set<State> dfaStates = new LinkedHashSet<>();  // Only used to avoid creating duplicated states
+        Queue<State> pendingStates = new LinkedList<>();
+        State initialState = new State(nfa.initial());
+        pendingStates.add(initialState);
+        dfaStates.add(initialState);
+        dfa.setInitialState(initialState);
         
-        return 0;
+        while (!pendingStates.isEmpty()) {
+            State currentState = pendingStates.poll();
+            List<State> transitions = new ArrayList<>();
+            for (String symbol : vocabulary) {
+                Set<String> labels = new TreeSet<>();
+                State toState = null;
+                for (String label : currentState.id()) {
+                    toState = nfa.transitionFrom(new State(label), symbol);
+                    if (!toState.equals(State.ERROR_STATE)) {
+                        labels.addAll(toState.id());
+                    }
+                }
+                if (!labels.isEmpty()) {  // labels is empty if there were only error states
+                    if (hasEpsilon) {
+                        Set<String> updatedLabels = new TreeSet<>();
+                        for (String toLabel : labels) {
+                            updatedLabels.addAll(closures.get(new State(toLabel)).id());
+                        }
+                        toState = new State(updatedLabels);
+                    } else {
+                        toState = new State(labels);
+                    }
+                }
+                if (!toState.equals(State.ERROR_STATE) && dfaStates.add(toState)) {
+                    pendingStates.add(toState);
+                }
+                transitions.add(toState);
+            }
+            dfa.addTransitions(currentState, transitions);
+            for (State nfaAcceptingState : nfa.acceptingStates()) {
+                boolean acceptingState = false;
+                for (String dfaStateLabel : currentState.id()) {
+                    if (nfaAcceptingState.id().contains(dfaStateLabel)) {
+                        dfa.addAcceptingState(currentState);
+                        acceptingState = true;
+                        break;
+                    }
+                }
+                if (acceptingState) {
+                    break;
+                }
+            }
+        }
+        return addAutomaton(dfa);
+    }
+
+    private Map<State, State> epsilonClosuresFor(Automaton nfa) {
+        Map<State, State> closures = new HashMap<>();
+        System.out.println("NDFAe closure:");
+        for (State state : nfa.states()) {
+            State closure = nfa.epsilonClosure(state);
+            closures.put(state, closure);
+            System.out.println(closure);
+        }
+        System.out.println();
+        return closures;
     }
 
     public void printAutomaton(int index) {
+        System.out.println("Automaton:");
         automatons.get(index).print();
         System.out.println();
     }
