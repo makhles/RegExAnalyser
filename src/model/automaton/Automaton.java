@@ -1,5 +1,7 @@
 package model.automaton;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -28,6 +30,25 @@ public class Automaton {
         init();
         label = new LinkedList<>();
         label.add(0, '@');
+    }
+
+    public Automaton(Automaton automaton) {
+        vocabulary = new ArrayList<>(automaton.vocabulary());
+        initialState = new State(automaton.initialState);
+        acceptingStates = new TreeSet<>();
+        for (State state : automaton.acceptingStates) {
+            Set<String> id = new TreeSet<>(state.id());
+            acceptingStates.add(new State(id));
+        }
+        transitions = new HashMap<>();
+        for (Map.Entry<State, List<State>> transition : automaton.transitions.entrySet()) {
+            List<State> states = new ArrayList<>();
+            for (State state : transition.getValue()) {
+                Set<String> id = new TreeSet<>(state.id());
+                states.add(new State(id));
+            }
+            transitions.put(new State(transition.getKey().id()), states);
+        }
     }
 
     private void init() {
@@ -160,6 +181,22 @@ public class Automaton {
             sb.append(c);
         }
         return sb.toString();
+    }
+
+    public boolean isNonDeterministic() {
+        boolean nonDeterministic = false;
+        for (List<State> states : transitions.values()) {
+            for (State state : states) {
+                if (state.id().size() > 1) {
+                    nonDeterministic = true;
+                    break;
+                }
+            }
+            if (nonDeterministic) {
+                break;
+            }
+        }
+        return nonDeterministic;
     }
 
 }

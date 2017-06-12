@@ -13,6 +13,8 @@ import java.util.TreeSet;
 
 import model.automaton.Automaton;
 import model.automaton.State;
+import model.exception.AutomatonAlreadyDeterministicException;
+import model.exception.AutomatonAlreadyMinimumException;
 import model.regex.RegExParser;
 
 public class Controller {
@@ -84,68 +86,114 @@ public class Controller {
         return automatons.size() - 1;
     }
 
-    public int convertNFAtoDFA(int index) {
-        Automaton nfa = automatons.get(index);
-        List<String> vocabulary = new ArrayList<>(nfa.vocabulary());
-        Map<State, State> closures = null;
-        boolean hasEpsilon = vocabulary.remove(Automaton.EPSILON);
-        Automaton dfa = new Automaton(vocabulary);
+    public int minimize(int index) throws AutomatonAlreadyMinimumException {
+        Automaton automaton = automatons.get(index);
+        int statesBefore, statesAfter;
 
-        if (hasEpsilon) {
-            closures = epsilonClosuresFor(nfa);
+        if (automaton.isNonDeterministic()) {
+            index = convertNFAtoDFA(index);
+            automaton = automatons.get(index);
         }
         
-        Set<State> dfaStates = new LinkedHashSet<>();  // Only used to avoid creating duplicated states
-        Queue<State> pendingStates = new LinkedList<>();
-        State initialState = new State(nfa.initial());
-        pendingStates.add(initialState);
-        dfaStates.add(initialState);
-        dfa.setInitialState(initialState);
+        automaton = new Automaton(automaton);
         
-        while (!pendingStates.isEmpty()) {
-            State currentState = pendingStates.poll();
-            List<State> transitions = new ArrayList<>();
-            for (String symbol : vocabulary) {
-                Set<String> labels = new TreeSet<>();
-                State toState = null;
-                for (String label : currentState.id()) {
-                    toState = nfa.transitionFrom(new State(label), symbol);
-                    if (!toState.equals(State.ERROR_STATE)) {
-                        labels.addAll(toState.id());
-                    }
-                }
-                if (!labels.isEmpty()) {  // labels is empty if there were only error states
-                    if (hasEpsilon) {
-                        Set<String> updatedLabels = new TreeSet<>();
-                        for (String toLabel : labels) {
-                            updatedLabels.addAll(closures.get(new State(toLabel)).id());
-                        }
-                        toState = new State(updatedLabels);
-                    } else {
-                        toState = new State(labels);
-                    }
-                }
-                if (!toState.equals(State.ERROR_STATE) && dfaStates.add(toState)) {
-                    pendingStates.add(toState);
-                }
-                transitions.add(toState);
+        statesBefore = automaton.states().size();
+        removeUnreacheableStates(automaton);
+        removeDeadStates(automaton);
+        mergeEquivalentStates(automaton);
+        statesAfter = automaton.states().size();
+        
+        if (statesAfter == statesBefore) {
+            throw new AutomatonAlreadyMinimumException();
+        }
+        return addAutomaton(automaton);
+    }
+
+    private int removeUnreacheableStates(Automaton automaton) {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    private int removeDeadStates(Automaton automaton) {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    private int mergeEquivalentStates(Automaton automaton) {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    public int convertNFAtoDFA(int index) throws AutomatonAlreadyDeterministicException {
+        Automaton nfa = automatons.get(index);
+        int indexToReturn = -1;
+
+        if (nfa.isNonDeterministic()) {
+            List<String> vocabulary = new ArrayList<>(nfa.vocabulary());
+            Map<State, State> closures = null;
+            boolean hasEpsilon = vocabulary.remove(Automaton.EPSILON);
+            Automaton dfa = new Automaton(vocabulary);
+
+            if (hasEpsilon) {
+                closures = epsilonClosuresFor(nfa);
             }
-            dfa.addTransitions(currentState, transitions);
-            for (State nfaAcceptingState : nfa.acceptingStates()) {
-                boolean acceptingState = false;
-                for (String dfaStateLabel : currentState.id()) {
-                    if (nfaAcceptingState.id().contains(dfaStateLabel)) {
-                        dfa.addAcceptingState(currentState);
-                        acceptingState = true;
+
+            Set<State> dfaStates = new LinkedHashSet<>(); // Only used to avoid creating duplicated
+                                                          // states
+            Queue<State> pendingStates = new LinkedList<>();
+            State initialState = new State(nfa.initial());
+            pendingStates.add(initialState);
+            dfaStates.add(initialState);
+            dfa.setInitialState(initialState);
+
+            while (!pendingStates.isEmpty()) {
+                State currentState = pendingStates.poll();
+                List<State> transitions = new ArrayList<>();
+                for (String symbol : vocabulary) {
+                    Set<String> labels = new TreeSet<>();
+                    State toState = null;
+                    for (String label : currentState.id()) {
+                        toState = nfa.transitionFrom(new State(label), symbol);
+                        if (!toState.equals(State.ERROR_STATE)) {
+                            labels.addAll(toState.id());
+                        }
+                    }
+                    if (!labels.isEmpty()) { // labels is empty if there were only error states
+                        if (hasEpsilon) {
+                            Set<String> updatedLabels = new TreeSet<>();
+                            for (String toLabel : labels) {
+                                updatedLabels.addAll(closures.get(new State(toLabel)).id());
+                            }
+                            toState = new State(updatedLabels);
+                        } else {
+                            toState = new State(labels);
+                        }
+                    }
+                    if (!toState.equals(State.ERROR_STATE) && dfaStates.add(toState)) {
+                        pendingStates.add(toState);
+                    }
+                    transitions.add(toState);
+                }
+                dfa.addTransitions(currentState, transitions);
+                for (State nfaAcceptingState : nfa.acceptingStates()) {
+                    boolean acceptingState = false;
+                    for (String dfaStateLabel : currentState.id()) {
+                        if (nfaAcceptingState.id().contains(dfaStateLabel)) {
+                            dfa.addAcceptingState(currentState);
+                            acceptingState = true;
+                            break;
+                        }
+                    }
+                    if (acceptingState) {
                         break;
                     }
                 }
-                if (acceptingState) {
-                    break;
-                }
+                indexToReturn = addAutomaton(dfa);
             }
+        } else {
+            throw new AutomatonAlreadyDeterministicException();
         }
-        return addAutomaton(dfa);
+        return indexToReturn;
     }
 
     private Map<State, State> epsilonClosuresFor(Automaton nfa) {
