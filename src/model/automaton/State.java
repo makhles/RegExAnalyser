@@ -6,35 +6,35 @@ import java.util.TreeSet;
 public class State {
 
     public static final State ERROR_STATE = new State("-");
-    private Set<String> id;
+    private Set<String> labels;
 
     public State(String label) {
-        id = new TreeSet<>();
-        id.add(label);
+        labels = new TreeSet<>();
+        labels.add(label);
     }
 
     public State(Set<String> id) {
-        this.id = id;
+        this.labels = id;
     }
 
     public State(State state) {
-        this.id = new TreeSet<>(state.id);
+        this.labels = new TreeSet<>(state.labels);
     }
 
-    public Set<String> id() {
-        return id;
+    public Set<String> labels() {
+        return labels;
     }
 
     @Override
     public String toString() {
-        return id.toString();
+        return labels.toString();
     }
 
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((id == null) ? 0 : id.hashCode());
+        result = prime * result + ((labels == null) ? 0 : labels.hashCode());
         return result;
     }
 
@@ -47,15 +47,15 @@ public class State {
         if (!(obj instanceof State))
             return false;
         State other = (State) obj;
-        if (id == null) {
-            if (other.id != null)
+        if (labels == null) {
+            if (other.labels != null)
                 return false;
-        } else if (!id.equals(other.id))
+        } else if (!labels.equals(other.labels))
             return false;
         return true;
     }
 
     public void addLabels(Set<String> labels) {
-        id.addAll(labels);
+        this.labels.addAll(labels);
     }
 }

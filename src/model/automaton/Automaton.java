@@ -15,6 +15,7 @@ public class Automaton {
 
     public final static String EPSILON = "&";
 
+    private boolean minimum;
     private State initialState;
     private List<Character> label;
     private List<String> vocabulary;
@@ -33,25 +34,27 @@ public class Automaton {
     }
 
     public Automaton(Automaton automaton) {
+        minimum = automaton.isMinimum();
         vocabulary = new ArrayList<>(automaton.vocabulary());
         initialState = new State(automaton.initialState);
-        acceptingStates = new TreeSet<>();
+        acceptingStates = new HashSet<>();
         for (State state : automaton.acceptingStates) {
-            Set<String> id = new TreeSet<>(state.id());
-            acceptingStates.add(new State(id));
+            Set<String> labels = new TreeSet<>(state.labels());
+            acceptingStates.add(new State(labels));
         }
         transitions = new HashMap<>();
         for (Map.Entry<State, List<State>> transition : automaton.transitions.entrySet()) {
             List<State> states = new ArrayList<>();
             for (State state : transition.getValue()) {
-                Set<String> id = new TreeSet<>(state.id());
-                states.add(new State(id));
+                Set<String> labels = new TreeSet<>(state.labels());
+                states.add(new State(labels));
             }
-            transitions.put(new State(transition.getKey().id()), states);
+            transitions.put(new State(transition.getKey().labels()), states);
         }
     }
 
     private void init() {
+        minimum = false;
         transitions = new LinkedHashMap<>();
         acceptingStates = new HashSet<>();
     }
@@ -101,21 +104,35 @@ public class Automaton {
         return transitions.get(state).get(index);
     }
 
+    public List<State> transitionsFrom(State state) {
+        return transitions.get(state);
+    }
+
+    public Set<State> transitionsTo(State state) {
+        Set<State> states = new HashSet<>();
+        for (Map.Entry<State, List<State>> transition : transitions.entrySet()) {
+            if (transition.getValue().contains(state)) {
+                states.add(transition.getKey());
+            }
+        }
+        return states;
+    }
+
     public State epsilonClosure(State fromState) {
         Queue<String> pendingLabels = new LinkedList<>();
         Set<String> closure = new TreeSet<>();
         State stateFound = null;
         int index = vocabulary.indexOf(EPSILON);
 
-        closure.addAll(fromState.id());
-        pendingLabels.addAll(fromState.id());
+        closure.addAll(fromState.labels());
+        pendingLabels.addAll(fromState.labels());
 
         while (!pendingLabels.isEmpty()) {
             String label = pendingLabels.poll();
             stateFound = transitionFrom(new State(label), index);
             if (!stateFound.equals(State.ERROR_STATE)) {
-                closure.addAll(stateFound.id());
-                pendingLabels.addAll(stateFound.id());
+                closure.addAll(stateFound.labels());
+                pendingLabels.addAll(stateFound.labels());
             }
         }
         return new State(closure);
@@ -187,7 +204,7 @@ public class Automaton {
         boolean nonDeterministic = false;
         for (List<State> states : transitions.values()) {
             for (State state : states) {
-                if (state.id().size() > 1) {
+                if (state.labels().size() > 1) {
                     nonDeterministic = true;
                     break;
                 }
@@ -197,6 +214,25 @@ public class Automaton {
             }
         }
         return nonDeterministic;
+    }
+
+    public boolean isMinimum() {
+        return minimum;
+    }
+
+    public void setMinimum(boolean minimum) {
+        this.minimum = minimum;
+    }
+
+    public void removeDeadStates(Set<State> states) {
+        if (states.contains(initialState)) {
+            initialState = null;
+        }
+        for (State state : states) {
+            transitions.keySet().removeAll(transitionsTo(state));
+        }
+        transitions.keySet().removeAll(states);
+        System.out.println("Dead states removed: " + states);
     }
 
 }
