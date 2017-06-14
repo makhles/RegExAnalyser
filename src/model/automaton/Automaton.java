@@ -202,18 +202,26 @@ public class Automaton {
 
     public boolean isNonDeterministic() {
         boolean nonDeterministic = false;
-        for (List<State> states : transitions.values()) {
-            for (State state : states) {
-                if (state.labels().size() > 1) {
-                    nonDeterministic = true;
+        if (hasEpsilonTransitions()) {
+            nonDeterministic = true;
+        } else {
+            for (List<State> states : transitions.values()) {
+                for (State state : states) {
+                    if (state.labels().size() > 1) {
+                        nonDeterministic = true;
+                        break;
+                    }
+                }
+                if (nonDeterministic) {
                     break;
                 }
             }
-            if (nonDeterministic) {
-                break;
-            }
         }
         return nonDeterministic;
+    }
+
+    public boolean hasEpsilonTransitions() {
+        return vocabulary.contains(EPSILON);
     }
 
     public boolean isMinimum() {
@@ -232,7 +240,68 @@ public class Automaton {
             transitions.keySet().removeAll(transitionsTo(state));
         }
         transitions.keySet().removeAll(states);
-        System.out.println("Dead states removed: " + states);
+    }
+
+    /**
+     * Returns a copy of this automaton with all states renamed to labels not in
+     * use by this automaton.
+     * 
+     * @return the copied automaton.
+     */
+    public Automaton renameStates() {
+        Automaton renamed = new Automaton(vocabulary);
+        Map<State, State> renamingMap = new LinkedHashMap<>();
+        Set<String> usedLabels = automatonLabels();
+        String label = nextLabel();
+
+        for (Map.Entry<State, List<State>> transition : transitions.entrySet()) {
+            State renamedFromState = renamingMap.get(transition.getKey());
+            if (renamedFromState == null) {
+                while (usedLabels.contains(label)) {
+                    label = nextLabel();
+                }
+                renamedFromState = new State(label);
+                renamingMap.put(transition.getKey(), renamedFromState);
+                usedLabels.add(label);
+            }
+            if (acceptingStates.contains(transition.getKey())) {
+                renamed.addAcceptingState(renamedFromState);
+            }
+            List<State> renamedToStates = new ArrayList<>();
+            for (State toState : transition.getValue()) {
+                State renamedToState = renamingMap.get(toState);
+                if (renamedToState == null) {
+                    if (toState.equals(State.ERROR_STATE)) {
+                        renamedToState = State.ERROR_STATE;
+                    } else {
+                        while (usedLabels.contains(label)) {
+                            label = nextLabel();
+                        }
+                        renamedToState = new State(label);
+                        renamingMap.put(toState, renamedToState);
+                        usedLabels.add(label);
+                    }
+                }
+                renamedToStates.add(renamedToState);
+            }
+            renamed.addTransitions(renamedFromState, renamedToStates);
+        }
+        renamed.setInitialState(renamingMap.get(initialState));
+        renamed.setMinimum(minimum);
+        return renamed;
+    }
+
+    /**
+     * Returns all the labels used in this automaton's states.
+     * 
+     * @return the set of labels alphabetically ordered.
+     */
+    private Set<String> automatonLabels() {
+        Set<String> labels = new TreeSet<>();
+        for (State state : states()) {
+            labels.addAll(state.labels());
+        }
+        return labels;
     }
 
 }

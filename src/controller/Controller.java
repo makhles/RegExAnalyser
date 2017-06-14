@@ -16,13 +16,12 @@ import model.automaton.Automaton;
 import model.automaton.State;
 import model.exception.AutomatonAlreadyDeterministicException;
 import model.exception.AutomatonAlreadyMinimumException;
+import model.exception.AutomatonIsEmptyException;
 import model.regex.RegExParser;
 
 public class Controller {
 
     private static Controller instance = new Controller();
-    private Automaton lastAutomaton;
-
     private List<Automaton> automatons;
 
     private Controller() {
@@ -57,23 +56,27 @@ public class Controller {
         Set<String> labels = null;
         State fromState = null;
 
-        lastAutomaton = new Automaton(table.get(0));
-        lastAutomaton.setInitialState(new State(initialState));
+        Automaton automaton = new Automaton(table.get(0));
+        automaton.setInitialState(new State(initialState));
 
         for (int row = 1; row < table.size(); row++) {
             fromState = new State(table.get(row).get(1));
             toStates = new ArrayList<>();
             if (table.get(row).get(0) == "*") {
-                lastAutomaton.addAcceptingState(fromState);
+                automaton.addAcceptingState(fromState);
             }
             for (int col = 2; col < table.get(row).size(); col++) {
                 labels = new HashSet<>();
                 Collections.addAll(labels, table.get(row).get(col).trim().split("\\s*,\\s*"));
-                toStates.add(new State(labels));
+                if (labels.contains("-")) {
+                    toStates.add(State.ERROR_STATE);
+                } else {
+                    toStates.add(new State(labels));
+                }
             }
-            lastAutomaton.addTransitions(fromState, toStates);
+            automaton.addTransitions(fromState, toStates);
         }
-        return addAutomaton(lastAutomaton);
+        return addAutomaton(automaton);
     }
 
     /**
@@ -88,30 +91,52 @@ public class Controller {
         return automatons.size() - 1;
     }
 
-    public int minimize(int index) throws AutomatonAlreadyMinimumException {
+    /**
+     * Minimizes the given automaton. If the automaton is already minimum, a
+     * {@link AutomatonAlreadyMinimumException} shall be thrown.
+     * 
+     * @param index
+     *            - the index to the automaton in the list of automatons.
+     * @return - the index to the minimized automaton.
+     * @throws AutomatonAlreadyMinimumException
+     */
+    public int minimize(int index) throws AutomatonAlreadyMinimumException, AutomatonIsEmptyException {
         Automaton automaton = automatons.get(index);
+
         if (automaton.isNonDeterministic()) {
+            System.out.println("Automaton is non-deterministic and shall be converted to a DFA:");
             index = convertNFAtoDFA(index);
             automaton = automatons.get(index);
         } else if (automaton.isMinimum()) {
             throw new AutomatonAlreadyMinimumException();
         }
 
-        Automaton minimum = new Automaton(automaton);
-        int statesBefore = minimum.states().size();
-        removeUnreachableStates(minimum);
-        removeDeadStates(minimum);
-        minimum = mergeEquivalentStates(minimum);
+        // Creates a copy automaton so that it's safe to
+        // remove unreachable and dead states
+        index = addAutomaton(new Automaton(automaton));
 
-        // User might have given the minimum automaton
-        if (minimum.states().size() == statesBefore) {
-            throw new AutomatonAlreadyMinimumException();
+        try {
+            removeUnreachableStates(index);
+            removeDeadStates(index);
+            index = mergeEquivalentStates(index);
+        } catch (Exception e) {
+            throw e;
         }
 
-        return addAutomaton(minimum);
+        return index;
     }
 
-    private void removeUnreachableStates(Automaton automaton) {
+    /**
+     * Remove all unreachable states from the automaton.
+     * 
+     * @param automaton
+     *            - the automaton from which any unreachable stat shall be
+     *            removed.
+     */
+    private void removeUnreachableStates(int index) {
+        System.out.print("Removing unreachable states... ");
+
+        Automaton automaton = automatons.get(index);
         Set<State> unreachable = new HashSet<>(automaton.states());
         Queue<State> toBeVisited = new LinkedList<>();
 
@@ -127,12 +152,32 @@ public class Controller {
                 }
             }
         }
-        System.out.println("Unreachable states removed: " + unreachable);
-        automaton.acceptingStates().removeAll(unreachable);
-        automaton.states().removeAll(unreachable);
+        if (unreachable.isEmpty()) {
+            System.out.println("nothing to be done.");
+        } else {
+            automaton.acceptingStates().removeAll(unreachable);
+            automaton.states().removeAll(unreachable);
+            System.out.println("done.");
+            System.out.println("Unreachable states removed: " + unreachable);
+            System.out.println("Resulting automaton:");
+            printAutomaton(index);
+        }
     }
 
-    private void removeDeadStates(Automaton automaton) {
+    /**
+     * Removes dead states from the automaton.
+     * 
+     * @param automaton
+     *            - the automaton from which any dead states shall be removed.
+     */
+    private void removeDeadStates(int index) throws AutomatonIsEmptyException {
+        System.out.print("Removing dead states... ");
+
+        Automaton automaton = automatons.get(index);
+        if (automaton.states().isEmpty()) {
+            throw new AutomatonIsEmptyException();
+        }
+
         Set<State> dead = new HashSet<>(automaton.states());
         Queue<State> toBeVisited = new LinkedList<>();
 
@@ -148,25 +193,41 @@ public class Controller {
                 }
             }
         }
-        automaton.removeDeadStates(dead);
+        if (dead.isEmpty()) {
+            System.out.println("nothing to be done.");
+        } else {
+            automaton.removeDeadStates(dead);
+            System.out.println("done.");
+            System.out.println("Dead states removed: " + dead);
+            System.out.println("Resulting automaton:");
+            printAutomaton(index);
+        }
     }
 
-    private Automaton mergeEquivalentStates(Automaton automaton) {
+    private int mergeEquivalentStates(int index) throws AutomatonIsEmptyException, AutomatonAlreadyMinimumException {
+        System.out.print("Merging equivalent states... ");
+
+        Automaton automaton = automatons.get(index);
+        if (automaton.states().isEmpty()) {
+            throw new AutomatonIsEmptyException();
+        }
+
         Set<List<State>> classes = new HashSet<>();
         List<State> nonAccepting = new ArrayList<>(automaton.states());
 
         nonAccepting.removeAll(automaton.acceptingStates());
         classes.add(new ArrayList<>(automaton.acceptingStates()));
-        classes.add(new ArrayList<>(nonAccepting));
-        
-        // TODO: error state
+        if (!nonAccepting.isEmpty()) {
+            classes.add(new ArrayList<>(nonAccepting));
+        }
 
-        boolean setsChanged = true;
-        while (classes.size() != automaton.states().size() && setsChanged) {
-            setsChanged = false;
+        boolean needsAnotherPass = true;
+        while (classes.size() != automaton.states().size() && needsAnotherPass) {
+            needsAnotherPass = false;
             Map<List<State>, List<State>> castOutMapping = new HashMap<>();
             List<State> castOut = null;
             for (List<State> equivalentClass : classes) {
+                boolean classChanged = false;
                 if (equivalentClass.size() > 1) {
                     State current = equivalentClass.get(0);
                     castOut = null;
@@ -187,14 +248,15 @@ public class Controller {
                                     castOut = new ArrayList<>();
                                 }
                                 castOut.add(next);
-                                setsChanged = true;
+                                classChanged = true;
                                 break;
                             }
                         }
                     }
                 }
-                if (setsChanged) {
+                if (classChanged) {
                     castOutMapping.put(equivalentClass, castOut);
+                    needsAnotherPass = true;
                 }
             }
             // Remove states that do not belong to each equivalence class
@@ -206,12 +268,12 @@ public class Controller {
 
         // Each equivalent class is a state. Ex.:
         // {A, B} becomes H
-        // {C}    becomes I
+        // {C} becomes I
         // {D, E} becomes J
         //
         // statesMapping maps each previous state to the new state (class):
-        // A --> H;   B --> H;   C --> I
-        // D --> J;   E --> J
+        // A --> H; B --> H; C --> I
+        // D --> J; E --> J
         Map<State, State> statesMapping = new HashMap<>();
         for (List<State> toClass : classes) {
             Set<String> labels = new TreeSet<>();
@@ -231,7 +293,11 @@ public class Controller {
             State representative = equivalentClass.get(0);
             for (String symbol : automaton.vocabulary()) {
                 State toState = automaton.transitionFrom(representative, symbol);
-                transitions.add(statesMapping.get(toState));
+                if (toState.equals(State.ERROR_STATE)) {
+                    transitions.add(State.ERROR_STATE);
+                } else {
+                    transitions.add(statesMapping.get(toState));
+                }
             }
             equivalent.addTransitions(statesMapping.get(representative), transitions);
         }
@@ -240,27 +306,49 @@ public class Controller {
         }
         equivalent.setInitialState(statesMapping.get(automaton.initial()));
         equivalent.setMinimum(true);
-        System.out.println("Number of equivalent classes: " + equivalent.states().size());
-        return equivalent;
+
+        // User might have given the minimum automaton
+        if (automaton.states().size() == equivalent.states().size()) {
+            System.out.println("nothing to be done.");
+            throw new AutomatonAlreadyMinimumException();
+        } else {
+            System.out.println("done.");
+            System.out.println("Equivalent classes: " + classes);
+            System.out.println("Resulting automaton:");
+            printAutomaton(addAutomaton(equivalent));
+            System.out.println("Renamed automaton:");
+            index = addAutomaton(equivalent.renameStates());
+            printAutomaton(index);
+        }
+        return index;
     }
 
+    /**
+     * Converts a NFA to a DFA through the De Simone tree method.
+     * 
+     * @param index
+     *            - the index of the NFA.
+     * @return the index of the DFA.
+     * @throws AutomatonAlreadyDeterministicException
+     */
     public int convertNFAtoDFA(int index) throws AutomatonAlreadyDeterministicException {
         Automaton nfa = automatons.get(index);
-        int indexToReturn = -1;
+        boolean hasEpsilon = nfa.hasEpsilonTransitions();
+        index = -1;
 
-        if (nfa.isNonDeterministic()) {
+        if (nfa.isNonDeterministic() || hasEpsilon) {
             List<String> vocabulary = new ArrayList<>(nfa.vocabulary());
             Map<State, State> closures = null;
-            boolean hasEpsilon = vocabulary.remove(Automaton.EPSILON);
-            Automaton dfa = new Automaton(vocabulary);
 
             if (hasEpsilon) {
+                vocabulary.remove(Automaton.EPSILON);
                 closures = epsilonClosuresFor(nfa);
             }
+            Automaton dfa = new Automaton(vocabulary);
 
-            Set<State> dfaStates = new LinkedHashSet<>(); // Only used to avoid
-                                                          // creating duplicated
-                                                          // states
+            // Only used to avoid creating duplicate states
+            Set<State> dfaStates = new LinkedHashSet<>();
+
             Queue<State> pendingStates = new LinkedList<>();
             State initialState = new State(nfa.initial());
             pendingStates.add(initialState);
@@ -310,12 +398,17 @@ public class Controller {
                         break;
                     }
                 }
-                indexToReturn = addAutomaton(dfa);
             }
+            index = addAutomaton(dfa);
+            printAutomaton(index);
+            System.out.println("Renamed automaton:");
+            Automaton renamed = dfa.renameStates();
+            index = addAutomaton(renamed);
+            printAutomaton(index);
         } else {
             throw new AutomatonAlreadyDeterministicException();
         }
-        return indexToReturn;
+        return index;
     }
 
     private Map<State, State> epsilonClosuresFor(Automaton nfa) {
@@ -331,7 +424,7 @@ public class Controller {
     }
 
     public void printAutomaton(int index) {
-        System.out.println("Automaton:");
+        System.out.println();
         automatons.get(index).print();
         System.out.println();
     }
