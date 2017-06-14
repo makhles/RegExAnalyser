@@ -21,6 +21,7 @@ import model.regex.RegExParser;
 
 public class Controller {
 
+    private static final String NON_DETERMINISTIC = "Automaton is non-deterministic and shall be converted to a DFA:";
     private static Controller instance = new Controller();
     private List<Automaton> automatons;
 
@@ -104,7 +105,7 @@ public class Controller {
         Automaton automaton = automatons.get(index);
 
         if (automaton.isNonDeterministic()) {
-            System.out.println("Automaton is non-deterministic and shall be converted to a DFA:");
+            System.out.println(NON_DETERMINISTIC);
             index = convertNFAtoDFA(index);
             automaton = automatons.get(index);
         } else if (automaton.isMinimum()) {
@@ -421,6 +422,76 @@ public class Controller {
         }
         System.out.println();
         return closures;
+    }
+
+    public int union(int indexA, int indexB) {
+        Automaton automatonA = automatons.get(indexA);
+        Automaton automatonB = automatons.get(indexB);
+        int index = unionIntersectionDifference(indexA, indexB);
+
+        return index;
+    }
+
+    private int unionIntersectionDifference(int indexA, int indexB) {
+        int index = -1;
+        Automaton automatonA = automatons.get(indexA);
+        Automaton automatonB = automatons.get(indexB);
+
+        System.out.println("Analysing automaton A... ");
+        if (automatonA.isNonDeterministic()) {
+            System.out.println(NON_DETERMINISTIC);
+            indexA = convertNFAtoDFA(indexA);
+            automatonA = automatons.get(indexA);
+        } else {
+            System.out.println(" done.");
+        }
+
+        System.out.println("Analysing automaton B... ");
+        if (automatonB.isNonDeterministic()) {
+            System.out.println(NON_DETERMINISTIC);
+            indexB = convertNFAtoDFA(indexB);
+            automatonB = automatons.get(indexB);
+        } else {
+            System.out.println(" done.");
+        }
+
+        // Rename states in both automatons simultaneously
+        // A '1' will be added to states in automatonA and
+        // a '2' will be added to states in automatonB
+        // TODO: continue...
+
+        // Vocabulary
+        Set<String> vocabulary = new TreeSet<>();
+        vocabulary.addAll(automatonA.vocabulary());
+        vocabulary.addAll(automatonB.vocabulary());
+
+        Automaton automaton = new Automaton(new ArrayList<>(vocabulary));
+
+        // Initial state
+        Set<String> labels = new LinkedHashSet<>();
+        labels.addAll(automatonA.initial().labels());
+        labels.addAll(automatonB.initial().labels());
+        State initial = new State(labels);
+
+        // Transitions
+        List<State> transitions = new ArrayList<>();
+        Set<State> visited = new HashSet<>();
+        Queue<State> pending = new LinkedList<>();
+        pending.add(initial);
+        
+        while (!pending.isEmpty()) {
+
+            State current = pending.poll();
+            visited.add(current);
+            
+            for (String symbol : vocabulary) {
+                
+            }
+        }
+        
+        // TODO: continue...
+
+        return index;
     }
 
     public void printAutomaton(int index) {

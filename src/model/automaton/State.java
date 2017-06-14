@@ -13,8 +13,8 @@ public class State {
         labels.add(label);
     }
 
-    public State(Set<String> id) {
-        this.labels = id;
+    public State(Set<String> labels) {
+        this.labels = labels;
     }
 
     public State(State state) {
