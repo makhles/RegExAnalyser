@@ -119,7 +119,8 @@ public class Controller {
 
         if (automaton.isNonDeterministic()) {
             System.out.println(NON_DETERMINISTIC);
-            index = convertNFAtoDFA(index);
+//            index = convertNFAtoDFA(index);
+            index = determinize(index);
             automaton = automatons.get(index);
         } else if (automaton.isMinimum()) {
             throw new AutomatonAlreadyMinimumException();
@@ -337,6 +338,88 @@ public class Controller {
         return index;
     }
 
+    public int determinize(int index) {
+        Automaton nfa = automatons.get(index);
+        boolean hasEpsilon = nfa.hasEpsilonTransitions();
+
+        if (nfa.isNonDeterministic() || hasEpsilon) {
+            List<String> vocabulary = new ArrayList<>(nfa.vocabulary());
+            Map<State, State> closures = null;
+
+            if (hasEpsilon) {
+                vocabulary.remove(Automaton.EPSILON);
+                closures = epsilonClosuresFor(nfa);
+            }
+            Automaton dfa = new Automaton(vocabulary);
+
+            // Only used to avoid creating duplicate states
+            Set<State> dfaStates = new LinkedHashSet<>();
+            Queue<State> pendingStates = new LinkedList<>();
+            State initialState = new State(nfa.initial());
+
+            pendingStates.add(initialState);
+            dfaStates.add(initialState);
+            dfa.setInitialState(initialState);
+
+            while (!pendingStates.isEmpty()) {
+                State currentState = pendingStates.poll();
+                List<State> transitions = new ArrayList<>();
+
+                for (String symbol : vocabulary) {
+                    Set<String> toLabels = new TreeSet<>();
+                    State toState = null;
+
+                    for (String label : currentState.labels()) {
+                        State closureState = closures.get(new State(label));
+
+                        for (String closureLabel : closureState.labels()) {
+                            toState = nfa.transitionFrom(new State(closureLabel), symbol);
+                            if (!toState.equals(State.ERROR_STATE)) {
+                                toLabels.addAll(toState.labels());
+                            }
+                        }
+                    }
+                    if (toLabels.isEmpty()) {
+                        toState = State.ERROR_STATE;
+                    } else {
+                        toState = new State(toLabels);
+                    }
+                    transitions.add(toState);
+                    if (dfaStates.add(toState)) {
+                        pendingStates.add(toState);
+                    }
+                }
+                dfa.addTransitions(currentState, transitions);
+            }
+
+            // Accepting states
+            for (State state : dfa.states()) {
+                boolean accepting = false;
+                for (String stateLabel : state.labels()) {
+                    State stateClosure = closures.get(new State(stateLabel));
+                    for (String label : stateClosure.labels()) {
+                        if (nfa.acceptingStates().contains(new State(label))) {
+                            dfa.addAcceptingState(state);
+                            accepting = true;
+                            break;
+                        }
+                    }
+                    if (accepting) break;
+                }
+            }
+
+            index = addAutomaton(dfa);
+            printAutomaton(index);
+            System.out.println("Renamed automaton:");
+            Automaton renamed = dfa.renameTupleStatesToSingleState();
+            index = addAutomaton(renamed);
+            printAutomaton(index);
+        } else {
+            throw new AutomatonAlreadyDeterministicException();
+        }
+        return index;
+    }
+
     /**
      * Converts a NFA to a DFA through the De Simone tree method.
      * 
@@ -392,6 +475,12 @@ public class Controller {
                         } else {
                             toState = new State(labels);
                         }
+                    } else {
+                        // The current state has only epsilon-moves through this
+                        // symbol
+                        if (hasEpsilon) {
+                            toState = new State(closures.get(currentState).labels());
+                        }
                     }
                     if (!toState.equals(State.ERROR_STATE) && dfaStates.add(toState)) {
                         pendingStates.add(toState);
@@ -437,12 +526,38 @@ public class Controller {
         return closures;
     }
 
+    /**
+     * Returns the intersection between two automatons. The given automatons
+     * shall be made complete if they're not already so.
+     * 
+     * @param indexA
+     *            - the index to the first automaton.
+     * @param indexB
+     *            - the index to the second automaton.
+     * @return the index to the automaton resulting from the intersection.
+     */
+    public int intersection(int indexA, int indexB) {
+        System.out.println("Starting intersection of " + indexA + " and " + indexB);
+        return complement(union(complement(indexA), complement(indexB)));
+    }
+
+    /**
+     * Returns the complement of the given automaton. The given automaton shall
+     * be made complete if it's not already so.
+     * 
+     * @param index
+     *            - the index to the automaton from which the complement is
+     *            wished.
+     * @return the index to the complemented automaton.
+     */
     public int complement(int index) {
+        System.out.println("Starting complement of " + index);
         Automaton automaton = automatons.get(index);
         Automaton complement = null;
 
         if (automaton.isNonDeterministic() || automaton.hasEpsilonTransitions()) {
-            complement = automatons.get(convertNFAtoDFA(index));
+//            complement = automatons.get(convertNFAtoDFA(index));
+            complement = automatons.get(determinize(index));
         } else {
             complement = new Automaton(automaton);
         }
@@ -458,17 +573,23 @@ public class Controller {
             complement.addAcceptingState(state);
         }
 
-        return addAutomaton(complement);
+        int newIndex = addAutomaton(complement);
+        System.out.println("Complement of " + index + " is now " + newIndex + ":");
+        printAutomaton(newIndex);
+
+        return newIndex;
     }
 
     public int union(int indexA, int indexB) {
+        System.out.println("Starting union of " + indexA + " and " + indexB);
         Automaton automatonA = new Automaton(automatons.get(indexA));
         Automaton automatonB = automatons.get(indexB);
 
         // Renames the states of B based on states of A
+        System.out.println("Renaming states of automaton " + indexB + ":");
         automatonB = automatonB.renameStatesBasedOn(automatonA);
         indexB = addAutomaton(automatonB);
-        System.out.println("States from the second automaton were renamed. New automaton:");
+        System.out.println("Renamed automaton (" + indexB + "):");
         printAutomaton(indexB);
 
         // Vocabulary
@@ -490,15 +611,15 @@ public class Controller {
         labels.addAll(automatonA.initial().labels());
         labels.addAll(automatonB.initial().labels());
 
-        int epsilonIndex = 0, index = 0;
+        int epsilonIndex = 0, pos = 0;
         for (String symbol : automaton.vocabulary()) {
             if (symbol.equals(Automaton.EPSILON)) {
                 transitions.add(new State(labels));
-                epsilonIndex = index;
+                epsilonIndex = pos;
             } else {
                 transitions.add(State.ERROR_STATE);
             }
-            index++;
+            pos++;
         }
 
         Set<String> usedLabels = automaton.usedLabels();
@@ -541,8 +662,10 @@ public class Controller {
             toStates.add(epsilonIndex, acceptingState);
             automaton.addTransitions(state, toStates);
         }
-
-        return addAutomaton(automaton);
+        int index = addAutomaton(automaton);
+        System.out.println("Union of " + indexA + " and " + indexB + " is " + index + ":");
+        printAutomaton(index);
+        return index;
     }
 
     /**

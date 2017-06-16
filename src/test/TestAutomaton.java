@@ -16,9 +16,19 @@ public class TestAutomaton {
         // printAutomaton();
         // createAutomaton();
         // testClosure();
-//        testMinimization();
-//        testUnion();
-        testComplement();
+        // testMinimization();
+        // testUnion();
+        // testComplement();
+        testIntersection();
+    }
+
+    private static void testIntersection() {
+        int index, indexA, indexB;
+        indexA = createAutomaton(11);
+        indexB = createAutomaton(12);
+        index = Controller.instance().intersection(indexA, indexB);
+        System.out.println("Resulting automaton:");
+        printAutomaton(index);
     }
 
     private static void testComplement() {
@@ -48,7 +58,8 @@ public class TestAutomaton {
 
     private static void testClosure() {
         int index = createAutomaton(3);
-        index = Controller.instance().convertNFAtoDFA(index);
+        // index = Controller.instance().convertNFAtoDFA(index);
+        index = Controller.instance().determinize(index);
         System.out.println("Resulting automaton:");
         printAutomaton(index);
     }
@@ -56,7 +67,7 @@ public class TestAutomaton {
     private static int createAutomaton(int model) {
         List<List<String>> table = table(model);
         int index = Controller.instance().createAutomaton(table, table.get(1).get(1));
-        System.out.println("Automaton created:");
+        System.out.println("Automaton " + index + " created:");
         printAutomaton(index);
         return index;
     }
@@ -74,37 +85,37 @@ public class TestAutomaton {
             table.add(Arrays.asList("*", "B", "A", "A", "-"));
             table.add(Arrays.asList("*", "C", "C", "D", "C"));
             table.add(Arrays.asList("*", "D", "C", "-", "C"));
-        break;
+            break;
         case 1:
-             table.add(Arrays.asList("a", "b", "c"));
-             table.add(Arrays.asList(" ", "A", "B", "C", "D"));
-             table.add(Arrays.asList("*", "B", " C,D", "-", "D"));
-             table.add(Arrays.asList("*", "C", "A", "A", "-"));
-             table.add(Arrays.asList(" ", "D", "-", "A, B, C", "C"));
-         break;
+            table.add(Arrays.asList("a", "b", "c"));
+            table.add(Arrays.asList(" ", "A", "B", "C", "D"));
+            table.add(Arrays.asList("*", "B", " C,D", "-", "D"));
+            table.add(Arrays.asList("*", "C", "A", "A", "-"));
+            table.add(Arrays.asList(" ", "D", "-", "A, B, C", "C"));
+            break;
         case 2:
-             table.add(Arrays.asList("a", "b"));
-             table.add(Arrays.asList("*", "0", "1,2", "-"));
-             table.add(Arrays.asList("*", "1", "1,2", "-"));
-             table.add(Arrays.asList(" ", "2", "-", "1,3"));
-             table.add(Arrays.asList(" ", "3", "1,2", "-"));
-         break;
+            table.add(Arrays.asList("a", "b"));
+            table.add(Arrays.asList("*", "0", "1,2", "-"));
+            table.add(Arrays.asList("*", "1", "1,2", "-"));
+            table.add(Arrays.asList(" ", "2", "-", "1,3"));
+            table.add(Arrays.asList(" ", "3", "1,2", "-"));
+            break;
 
         // NFA with epsilon transitions
         case 3:
-             table.add(Arrays.asList("a", "b", "c", "&"));
-             table.add(Arrays.asList(" ", "A", "A", "B", "-", "B,C"));
-             table.add(Arrays.asList(" ", "B", "C", "-", "A,B", "-"));
-             table.add(Arrays.asList("*", "C", "A", "C", "C", "B"));
-         break;
+            table.add(Arrays.asList("a", "b", "c", "&"));
+            table.add(Arrays.asList(" ", "A", "A", "B", "-", "B,C"));
+            table.add(Arrays.asList(" ", "B", "C", "-", "A,B", "-"));
+            table.add(Arrays.asList("*", "C", "A", "C", "C", "B"));
+            break;
 
         case 4:
-             table.add(Arrays.asList("a", "b", "c", "&"));
-             table.add(Arrays.asList(" ", "1", "2", "-", "4", "-"));
-             table.add(Arrays.asList(" ", "2", "-", "3", "-", "1"));
-             table.add(Arrays.asList("*", "3", "2", "-", "-", "-"));
-             table.add(Arrays.asList("*", "4", "-", "-", "3", "3"));
-         break;
+            table.add(Arrays.asList("a", "b", "c", "&"));
+            table.add(Arrays.asList(" ", "1", "2", "-", "4", "-"));
+            table.add(Arrays.asList(" ", "2", "-", "3", "-", "1"));
+            table.add(Arrays.asList("*", "3", "2", "-", "-", "-"));
+            table.add(Arrays.asList("*", "4", "-", "-", "3", "3"));
+            break;
 
         // DFAs
         case 5:
@@ -114,55 +125,67 @@ public class TestAutomaton {
             table.add(Arrays.asList(" ", "Q2", "-", "Q4"));
             table.add(Arrays.asList("*", "Q3", "Q3", "Q3"));
             table.add(Arrays.asList("*", "Q4", "Q4", "Q4"));
-        break;
+            break;
 
-         // DFA with unreachable states {C, D} and dead states {C, F}
+        // DFA with unreachable states {C, D} and dead states {C, F}
         case 6:
-             table.add(Arrays.asList("a", "b"));
-             table.add(Arrays.asList(" ", "A", "E", "B"));
-             table.add(Arrays.asList(" ", "B", "E", "F"));
-             table.add(Arrays.asList(" ", "C", "-", "F"));
-             table.add(Arrays.asList(" ", "D", "D", "A"));
-             table.add(Arrays.asList("*", "E", "E", "E"));
-             table.add(Arrays.asList(" ", "F", "-", "-"));
-         break;
+            table.add(Arrays.asList("a", "b"));
+            table.add(Arrays.asList(" ", "A", "E", "B"));
+            table.add(Arrays.asList(" ", "B", "E", "F"));
+            table.add(Arrays.asList(" ", "C", "-", "F"));
+            table.add(Arrays.asList(" ", "D", "D", "A"));
+            table.add(Arrays.asList("*", "E", "E", "E"));
+            table.add(Arrays.asList(" ", "F", "-", "-"));
+            break;
 
         // DFA with unreachable states {B, C, E, F} and dead states {A, C, D, F}
         case 7:
-             table.add(Arrays.asList("a", "b"));
-             table.add(Arrays.asList(" ", "A", "D", "D"));
-             table.add(Arrays.asList(" ", "B", "E", "F"));
-             table.add(Arrays.asList(" ", "C", "-", "F"));
-             table.add(Arrays.asList(" ", "D", "D", "A"));
-             table.add(Arrays.asList("*", "E", "E", "E"));
-             table.add(Arrays.asList(" ", "F", "-", "-"));
-         break;
+            table.add(Arrays.asList("a", "b"));
+            table.add(Arrays.asList(" ", "A", "D", "D"));
+            table.add(Arrays.asList(" ", "B", "E", "F"));
+            table.add(Arrays.asList(" ", "C", "-", "F"));
+            table.add(Arrays.asList(" ", "D", "D", "A"));
+            table.add(Arrays.asList("*", "E", "E", "E"));
+            table.add(Arrays.asList(" ", "F", "-", "-"));
+            break;
 
         // DFA with unreachable states {D, H} and 3 equivalent classes
         case 8:
-             table.add(Arrays.asList("a", "b"));
-             table.add(Arrays.asList("*", "A", "G", "B"));
-             table.add(Arrays.asList(" ", "B", "F", "E"));
-             table.add(Arrays.asList(" ", "C", "C", "G"));
-             table.add(Arrays.asList("*", "D", "A", "H"));
-             table.add(Arrays.asList(" ", "E", "E", "A"));
-             table.add(Arrays.asList(" ", "F", "B", "C"));
-             table.add(Arrays.asList("*", "G", "G", "F"));
-             table.add(Arrays.asList(" ", "H", "H", "D"));
-         break;
-         
-        case 9:  // Even number of a's
+            table.add(Arrays.asList("a", "b"));
+            table.add(Arrays.asList("*", "A", "G", "B"));
+            table.add(Arrays.asList(" ", "B", "F", "E"));
+            table.add(Arrays.asList(" ", "C", "C", "G"));
+            table.add(Arrays.asList("*", "D", "A", "H"));
+            table.add(Arrays.asList(" ", "E", "E", "A"));
+            table.add(Arrays.asList(" ", "F", "B", "C"));
+            table.add(Arrays.asList("*", "G", "G", "F"));
+            table.add(Arrays.asList(" ", "H", "H", "D"));
+            break;
+
+        case 9: // Even number of a's
             table.add(Arrays.asList("a"));
             table.add(Arrays.asList("*", "A", "B"));
             table.add(Arrays.asList(" ", "B", "A"));
-        break;
-        
-        case 10:  // Odd number of a's
+            break;
+
+        case 10: // Odd number of a's
             table.add(Arrays.asList("a"));
             table.add(Arrays.asList(" ", "A", "B"));
             table.add(Arrays.asList("*", "B", "A"));
-        break;
-         
+            break;
+
+        case 11: // L = {x | x in {0,1}* ^ there is no 00}
+            table.add(Arrays.asList("0", "1"));
+            table.add(Arrays.asList("*", "A", "B", "A"));
+            table.add(Arrays.asList("*", "B", "-", "A"));
+            break;
+
+        case 12: // L = {x | x in {0,1}* ^ there is no 11}
+            table.add(Arrays.asList("0", "1"));
+            table.add(Arrays.asList("*", "A", "A", "B"));
+            table.add(Arrays.asList("*", "B", "A", "-"));
+            break;
+
         default:
             break;
         }
