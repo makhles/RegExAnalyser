@@ -22,8 +22,8 @@ public class TestAutomaton {
 
     private static void testUnion() {
         int index, indexA, indexB;
-        indexA = createAutomaton(0);
-        indexB = createAutomaton(1);
+        indexA = createAutomaton(9);
+        indexB = createAutomaton(10);
         index = Controller.instance().union(indexA, indexB);
         System.out.println("Resulting automaton:");
         printAutomaton(index);
@@ -142,6 +142,18 @@ public class TestAutomaton {
              table.add(Arrays.asList("*", "G", "G", "F"));
              table.add(Arrays.asList(" ", "H", "H", "D"));
          break;
+         
+        case 9:  // Even number of a's
+            table.add(Arrays.asList("a"));
+            table.add(Arrays.asList("*", "A", "B"));
+            table.add(Arrays.asList(" ", "B", "A"));
+        break;
+        
+        case 10:  // Odd number of a's
+            table.add(Arrays.asList("a"));
+            table.add(Arrays.asList(" ", "A", "B"));
+            table.add(Arrays.asList("*", "B", "A"));
+        break;
          
         default:
             break;

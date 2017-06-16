@@ -39,10 +39,11 @@ public class Controller {
     }
 
     /**
-     * Creates an automaton based on the given table and initial state. The table should be
-     * formatted as such: the first row contains the vocabulary. The second and following rows have
-     * a "*" in the first column if that is an accepting state, followed by the state label in the
-     * second column. In each subsequent column is the state to which the first state of that row
+     * Creates an automaton based on the given table and initial state. The
+     * table should be formatted as such: the first row contains the vocabulary.
+     * The second and following rows have a "*" in the first column if that is
+     * an accepting state, followed by the state label in the second column. In
+     * each subsequent column is the state to which the first state of that row
      * goes to through the symbol in the respective column of the first row.
      * 
      * @param transitions
@@ -143,7 +144,8 @@ public class Controller {
      * Remove all unreachable states from the automaton.
      * 
      * @param automaton
-     *            - the automaton from which any unreachable stat shall be removed.
+     *            - the automaton from which any unreachable stat shall be
+     *            removed.
      */
     private void removeUnreachableStates(int index) {
         System.out.print("Removing unreachable states... ");
@@ -329,7 +331,7 @@ public class Controller {
             System.out.println("Resulting automaton:");
             printAutomaton(addAutomaton(equivalent));
             System.out.println("Renamed automaton:");
-            index = addAutomaton(equivalent.renameStatesBasedOn(equivalent));
+            index = addAutomaton(equivalent.renameTupleStatesToSingleState());
             printAutomaton(index);
         }
         return index;
@@ -414,7 +416,7 @@ public class Controller {
             index = addAutomaton(dfa);
             printAutomaton(index);
             System.out.println("Renamed automaton:");
-            Automaton renamed = dfa.renameStatesBasedOn(dfa);
+            Automaton renamed = dfa.renameTupleStatesToSingleState();
             index = addAutomaton(renamed);
             printAutomaton(index);
         } else {
@@ -437,10 +439,13 @@ public class Controller {
 
     public int union(int indexA, int indexB) {
         Automaton automatonA = new Automaton(automatons.get(indexA));
-        Automaton automatonB = new Automaton(automatons.get(indexB));
+        Automaton automatonB = automatons.get(indexB);
 
         // Renames the states of B based on states of A
         automatonB = automatonB.renameStatesBasedOn(automatonA);
+        indexB = addAutomaton(automatonB);
+        System.out.println("States from the second automaton were renamed. New automaton:");
+        printAutomaton(indexB);
 
         // Vocabulary
         Set<String> vocabulary = new LinkedHashSet<>();
@@ -454,11 +459,12 @@ public class Controller {
         copyTransitions(automatonA, automaton);
         copyTransitions(automatonB, automaton);
 
-        // Initial state goes to A's and B's initial states through Epsilon-moves
+        // Initial state goes to A's and B's initial states through
+        // Epsilon-moves
+        List<State> transitions = new ArrayList<>(automaton.vocabulary().size());
         Set<String> labels = new TreeSet<>();
         labels.addAll(automatonA.initial().labels());
         labels.addAll(automatonB.initial().labels());
-        List<State> transitions = new ArrayList<>(automaton.vocabulary().size());
 
         int epsilonIndex = 0, index = 0;
         for (String symbol : automaton.vocabulary()) {
@@ -470,32 +476,54 @@ public class Controller {
             }
             index++;
         }
-        State initial = new State(automaton.nextLabel());
+
+        Set<String> usedLabels = automaton.usedLabels();
+        String initialLabel = automaton.nextLabel();
+        while (usedLabels.contains(initialLabel)) {
+            initialLabel = automaton.nextLabel();
+        }
+        usedLabels.add(initialLabel);
+
+        State initial = new State(initialLabel);
         automaton.setInitialState(initial);
         automaton.addTransitions(initial, transitions);
 
-        // Accepting states
+        // Gather accepting states from A and B
         Set<State> accepting = new HashSet<>();
         for (State state : automaton.states()) {
             if (automatonA.acceptingStates().contains(state) || automatonB.acceptingStates().contains(state)) {
                 accepting.add(state);
             }
         }
-        State acceptingState = new State(automaton.nextLabel());
+
+        // Create a new accepting state
+        String acceptingLabel = automaton.nextLabel();
+        while (usedLabels.contains(acceptingLabel)) {
+            acceptingLabel = automaton.nextLabel();
+        }
+        State acceptingState = new State(acceptingLabel);
+        transitions = new ArrayList<>(automaton.vocabulary().size());
+
+        for (int i = 0; i < automaton.vocabulary().size(); i++) {
+            transitions.add(State.ERROR_STATE);
+        }
+        automaton.addAcceptingState(acceptingState);
+        automaton.addTransitions(acceptingState, transitions);
+
+        // Make all previous accepting states go to new accepting state
         for (State state : accepting) {
             List<State> toStates = automaton.removeTransitions(state);
             toStates.remove(epsilonIndex);
             toStates.add(epsilonIndex, acceptingState);
             automaton.addTransitions(state, toStates);
         }
-        automaton.addAcceptingState(acceptingState);
-        automaton.setMinimum(false);
 
         return addAutomaton(automaton);
     }
 
     /**
-     * Copies the transitions from the source automaton to the destination automaton.
+     * Copies the transitions from the source automaton to the destination
+     * automaton.
      * 
      * @param source
      *            - the automaton whose transitions shall be copied.
@@ -503,13 +531,12 @@ public class Controller {
      *            - the automaton which shall receive the transitions.
      */
     private void copyTransitions(Automaton source, Automaton destination) {
-        List<State> transitions = new ArrayList<>(destination.vocabulary().size());
         for (State state : source.states()) {
+            List<State> transitions = new ArrayList<>(destination.vocabulary().size());
             for (String symbol : destination.vocabulary()) {
                 transitions.add(new State(source.transitionFrom(state, symbol).labels()));
             }
             destination.addTransitions(new State(state.labels()), transitions);
-            transitions.clear();
         }
     }
 

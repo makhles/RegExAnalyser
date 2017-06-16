@@ -254,26 +254,28 @@ public class Automaton {
     }
 
     /**
-     * Returns a copy of this automaton with all states renamed to labels not in use by the
-     * automaton passed as parameter.
-     * @param automaton - the automaton which shall provide the labels.
+     * Returns a copy of this automaton with all states renamed to labels not in
+     * use by the automaton passed as parameter.
+     * 
+     * @param automaton
+     *            - the automaton which shall provide the labels.
      * @return the copied automaton.
      */
-    public Automaton renameStatesBasedOn(Automaton automaton) {
+    public Automaton renameTupleStatesToSingleState() {
         Automaton renamed = new Automaton(vocabulary);
         Map<State, State> renamingMap = new LinkedHashMap<>();
-        Set<String> usedLabels = automaton.usedLabels();
-        String label = automaton.nextLabel();
+        Set<String> usedLabels = usedLabels();
+        String nextLabel = nextLabel();
 
         for (Map.Entry<State, List<State>> transition : transitions.entrySet()) {
             State renamedFromState = renamingMap.get(transition.getKey());
             if (renamedFromState == null) {
-                while (usedLabels.contains(label)) {
-                    label = automaton.nextLabel();
+                while (usedLabels.contains(nextLabel)) {
+                    nextLabel = nextLabel();
                 }
-                renamedFromState = new State(label);
+                renamedFromState = new State(nextLabel);
                 renamingMap.put(transition.getKey(), renamedFromState);
-                usedLabels.add(label);
+                usedLabels.add(nextLabel);
             }
             if (acceptingStates.contains(transition.getKey())) {
                 renamed.addAcceptingState(renamedFromState);
@@ -285,12 +287,12 @@ public class Automaton {
                     if (toState.equals(State.ERROR_STATE)) {
                         renamedToState = State.ERROR_STATE;
                     } else {
-                        while (usedLabels.contains(label)) {
-                            label = automaton.nextLabel();
+                        while (usedLabels.contains(nextLabel)) {
+                            nextLabel = nextLabel();
                         }
-                        renamedToState = new State(label);
+                        renamedToState = new State(nextLabel);
                         renamingMap.put(toState, renamedToState);
-                        usedLabels.add(label);
+                        usedLabels.add(nextLabel);
                     }
                 }
                 renamedToStates.add(renamedToState);
@@ -302,12 +304,68 @@ public class Automaton {
         return renamed;
     }
 
+    public Automaton renameStatesBasedOn(Automaton automaton) {
+        Automaton renamedAutomaton = new Automaton(vocabulary);
+        Map<String, String> labelMapping = new LinkedHashMap<>();
+        Map<State, State> stateMapping = new LinkedHashMap<>();
+        Set<String> usedLabels = automaton.usedLabels();
+        String nextLabel = automaton.nextLabel();
+
+        // Loop over states
+        for (State state : states()) {
+            if (state.labels().size() != 1) {
+                System.err.println("fromState contains more than one label.");
+                System.exit(1);
+            }
+            while (usedLabels.contains(nextLabel)) {
+                nextLabel = automaton.nextLabel();
+            }
+            usedLabels.add(nextLabel);
+            String previousLabel = null;
+            for (String label : state.labels()) {
+                previousLabel = label;
+            }
+            labelMapping.put(previousLabel, nextLabel);
+            State renamedState = new State(nextLabel);
+            stateMapping.put(state, renamedState);
+
+            // Initial state
+            if (state.equals(initialState)) {
+                renamedAutomaton.setInitialState(renamedState);
+            }
+
+            // Accepting state
+            if (acceptingStates.contains(state)) {
+                renamedAutomaton.addAcceptingState(renamedState);
+            }
+        }
+
+        // Loop over transitions
+        for (State fromState : states()) {
+            List<State> renamedToStates = new ArrayList<>();
+            for (State toState : transitions.get(fromState)) {
+                Set<String> renamedLabels = new TreeSet<>();
+                if (toState.equals(State.ERROR_STATE)) {
+                    renamedToStates.add(State.ERROR_STATE);
+                } else {
+                    for (String previousLabel : toState.labels()) {
+                        renamedLabels.add(labelMapping.get(previousLabel));
+                    }
+                    renamedToStates.add(new State(renamedLabels));
+                }
+            }
+            renamedAutomaton.addTransitions(stateMapping.get(fromState), renamedToStates);
+        }
+        renamedAutomaton.setMinimum(false);
+        return renamedAutomaton;
+    }
+
     /**
      * Returns all the labels used in this automaton's states.
      * 
      * @return the set of labels alphabetically ordered.
      */
-    private Set<String> usedLabels() {
+    public Set<String> usedLabels() {
         Set<String> labels = new TreeSet<>();
         for (State state : states()) {
             labels.addAll(state.labels());
