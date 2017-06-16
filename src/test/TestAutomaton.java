@@ -17,7 +17,15 @@ public class TestAutomaton {
         // createAutomaton();
         // testClosure();
 //        testMinimization();
-        testUnion();
+//        testUnion();
+        testComplement();
+    }
+
+    private static void testComplement() {
+        int index = createAutomaton(4);
+        index = Controller.instance().complement(index);
+        System.out.println("Resulting automaton:");
+        printAutomaton(index);
     }
 
     private static void testUnion() {

@@ -437,6 +437,30 @@ public class Controller {
         return closures;
     }
 
+    public int complement(int index) {
+        Automaton automaton = automatons.get(index);
+        Automaton complement = null;
+
+        if (automaton.isNonDeterministic() || automaton.hasEpsilonTransitions()) {
+            complement = automatons.get(convertNFAtoDFA(index));
+        } else {
+            complement = new Automaton(automaton);
+        }
+
+        complement.makeComplete();
+
+        Set<State> nonAccepting = new HashSet<>();
+        nonAccepting.addAll(complement.states());
+        nonAccepting.removeAll(complement.acceptingStates());
+        complement.acceptingStates().clear();
+
+        for (State state : nonAccepting) {
+            complement.addAcceptingState(state);
+        }
+
+        return addAutomaton(complement);
+    }
+
     public int union(int indexA, int indexB) {
         Automaton automatonA = new Automaton(automatons.get(indexA));
         Automaton automatonB = automatons.get(indexB);

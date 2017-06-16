@@ -372,4 +372,47 @@ public class Automaton {
         }
         return labels;
     }
+
+    public void makeComplete() {
+        Map<State, List<State>> newTransitions = new HashMap<>();
+        Set<String> usedLabels = usedLabels();
+        String label = nextLabel();
+        List<State> toStates = null;
+        boolean incomplete = false;
+
+        // Get a new avaialable label for the error state
+        while (usedLabels.contains(label)) {
+            label = nextLabel();
+        }
+        State errorState = new State(label);
+
+        // Substitute transitions to error state
+        for (Map.Entry<State, List<State>> transition : transitions.entrySet()) {
+            toStates = new ArrayList<>(vocabulary.size());
+            for (State state : transition.getValue()) {
+                if (state.labels().contains("-")) {
+                    toStates.add(errorState);
+                    incomplete = true;
+                } else {
+                    toStates.add(state);
+                }
+            }
+            newTransitions.put(transition.getKey(), toStates);
+        }
+
+        if (incomplete) { // TODO: turn into class field
+            // Create the transition to the error state
+            toStates = new ArrayList<>(vocabulary.size());
+            for (int i = 0; i < vocabulary.size(); i++) {
+                toStates.add(errorState);
+            }
+            newTransitions.put(errorState, toStates);
+    
+            // Replace current transitions
+            transitions.clear();
+            for (Map.Entry<State, List<State>> transition : newTransitions.entrySet()) {
+                addTransitions(transition.getKey(), transition.getValue());
+            }
+        }
+    }
 }
