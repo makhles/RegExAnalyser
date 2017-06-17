@@ -243,19 +243,32 @@ public class Automaton {
         this.minimum = minimum;
     }
 
-    public void removeDeadStates(Set<State> states) {
-        if (states.contains(initialState)) {
+    public void removeDeadStates(Set<State> deadStates) {
+        if (deadStates.contains(initialState)) {
             initialState = null;
         }
-        for (State state : states) {
-            transitions.keySet().removeAll(transitionsTo(state));
+
+        // Remove transitions from the dead states
+        transitions.keySet().removeAll(deadStates);
+
+        // Remove transitions to the dead states
+        for (Map.Entry<State, List<State>> transition : transitions.entrySet()) {
+            for (State state : deadStates) {
+                int index = transition.getValue().indexOf(state);
+                // The current state might transition to a dead state
+                // through more than one symbol
+                while (index != -1) {
+                    transition.getValue().remove(index);
+                    transition.getValue().add(index, State.ERROR_STATE);
+                    index = transition.getValue().indexOf(state);
+                }
+            }
         }
-        transitions.keySet().removeAll(states);
     }
 
     /**
-     * Returns a copy of this automaton with all states renamed to labels not in
-     * use by the automaton passed as parameter.
+     * Returns a copy of this automaton with all states renamed to labels not in use by the
+     * automaton passed as parameter.
      * 
      * @param automaton
      *            - the automaton which shall provide the labels.
@@ -407,7 +420,7 @@ public class Automaton {
                 toStates.add(errorState);
             }
             newTransitions.put(errorState, toStates);
-    
+
             // Replace current transitions
             transitions.clear();
             for (Map.Entry<State, List<State>> transition : newTransitions.entrySet()) {

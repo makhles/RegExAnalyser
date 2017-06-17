@@ -39,11 +39,10 @@ public class Controller {
     }
 
     /**
-     * Creates an automaton based on the given table and initial state. The
-     * table should be formatted as such: the first row contains the vocabulary.
-     * The second and following rows have a "*" in the first column if that is
-     * an accepting state, followed by the state label in the second column. In
-     * each subsequent column is the state to which the first state of that row
+     * Creates an automaton based on the given table and initial state. The table should be
+     * formatted as such: the first row contains the vocabulary. The second and following rows have
+     * a "*" in the first column if that is an accepting state, followed by the state label in the
+     * second column. In each subsequent column is the state to which the first state of that row
      * goes to through the symbol in the respective column of the first row.
      * 
      * @param transitions
@@ -119,7 +118,7 @@ public class Controller {
 
         if (automaton.isNonDeterministic()) {
             System.out.println(NON_DETERMINISTIC);
-//            index = convertNFAtoDFA(index);
+            // index = convertNFAtoDFA(index);
             index = determinize(index);
             automaton = automatons.get(index);
         } else if (automaton.isMinimum()) {
@@ -145,8 +144,7 @@ public class Controller {
      * Remove all unreachable states from the automaton.
      * 
      * @param automaton
-     *            - the automaton from which any unreachable stat shall be
-     *            removed.
+     *            - the automaton from which any unreachable stat shall be removed.
      */
     private void removeUnreachableStates(int index) {
         System.out.print("Removing unreachable states... ");
@@ -186,7 +184,7 @@ public class Controller {
      *            - the automaton from which any dead states shall be removed.
      */
     private void removeDeadStates(int index) throws AutomatonIsEmptyException {
-        System.out.print("Removing dead states... ");
+        System.out.print("Removing dead states from " + index + "... ");
 
         Automaton automaton = automatons.get(index);
         if (automaton.states().isEmpty()) {
@@ -404,104 +402,11 @@ public class Controller {
                             break;
                         }
                     }
-                    if (accepting) break;
-                }
-            }
-
-            index = addAutomaton(dfa);
-            printAutomaton(index);
-            System.out.println("Renamed automaton:");
-            Automaton renamed = dfa.renameTupleStatesToSingleState();
-            index = addAutomaton(renamed);
-            printAutomaton(index);
-        } else {
-            throw new AutomatonAlreadyDeterministicException();
-        }
-        return index;
-    }
-
-    /**
-     * Converts a NFA to a DFA through the De Simone tree method.
-     * 
-     * @param index
-     *            - the index of the NFA.
-     * @return the index of the DFA.
-     * @throws AutomatonAlreadyDeterministicException
-     */
-    public int convertNFAtoDFA(int index) throws AutomatonAlreadyDeterministicException {
-        Automaton nfa = automatons.get(index);
-        boolean hasEpsilon = nfa.hasEpsilonTransitions();
-        index = -1;
-
-        if (nfa.isNonDeterministic() || hasEpsilon) {
-            List<String> vocabulary = new ArrayList<>(nfa.vocabulary());
-            Map<State, State> closures = null;
-
-            if (hasEpsilon) {
-                vocabulary.remove(Automaton.EPSILON);
-                closures = epsilonClosuresFor(nfa);
-            }
-            Automaton dfa = new Automaton(vocabulary);
-
-            // Only used to avoid creating duplicate states
-            Set<State> dfaStates = new LinkedHashSet<>();
-
-            Queue<State> pendingStates = new LinkedList<>();
-            State initialState = new State(nfa.initial());
-            pendingStates.add(initialState);
-            dfaStates.add(initialState);
-            dfa.setInitialState(initialState);
-
-            while (!pendingStates.isEmpty()) {
-                State currentState = pendingStates.poll();
-                List<State> transitions = new ArrayList<>();
-                for (String symbol : vocabulary) {
-                    Set<String> labels = new TreeSet<>();
-                    State toState = null;
-                    for (String label : currentState.labels()) {
-                        toState = nfa.transitionFrom(new State(label), symbol);
-                        if (!toState.equals(State.ERROR_STATE)) {
-                            labels.addAll(toState.labels());
-                        }
-                    }
-                    if (!labels.isEmpty()) { // labels is empty if there were
-                                             // only error states
-                        if (hasEpsilon) {
-                            Set<String> updatedLabels = new TreeSet<>();
-                            for (String toLabel : labels) {
-                                updatedLabels.addAll(closures.get(new State(toLabel)).labels());
-                            }
-                            toState = new State(updatedLabels);
-                        } else {
-                            toState = new State(labels);
-                        }
-                    } else {
-                        // The current state has only epsilon-moves through this
-                        // symbol
-                        if (hasEpsilon) {
-                            toState = new State(closures.get(currentState).labels());
-                        }
-                    }
-                    if (!toState.equals(State.ERROR_STATE) && dfaStates.add(toState)) {
-                        pendingStates.add(toState);
-                    }
-                    transitions.add(toState);
-                }
-                dfa.addTransitions(currentState, transitions);
-                for (State nfaAcceptingState : nfa.acceptingStates()) {
-                    boolean acceptingState = false;
-                    for (String dfaStateLabel : currentState.labels()) {
-                        if (nfaAcceptingState.labels().contains(dfaStateLabel)) {
-                            dfa.addAcceptingState(currentState);
-                            acceptingState = true;
-                            break;
-                        }
-                    }
-                    if (acceptingState) {
+                    if (accepting)
                         break;
-                    }
                 }
             }
+
             index = addAutomaton(dfa);
             printAutomaton(index);
             System.out.println("Renamed automaton:");
@@ -527,8 +432,8 @@ public class Controller {
     }
 
     /**
-     * Returns the intersection between two automatons. The given automatons
-     * shall be made complete if they're not already so.
+     * Returns the intersection between two automatons. The given automatons shall be made complete
+     * if they're not already so.
      * 
      * @param indexA
      *            - the index to the first automaton.
@@ -538,16 +443,17 @@ public class Controller {
      */
     public int intersection(int indexA, int indexB) {
         System.out.println("Starting intersection of " + indexA + " and " + indexB);
-        return complement(union(complement(indexA), complement(indexB)));
+        int index = complement(union(complement(indexA), complement(indexB)));
+        removeDeadStates(index);
+        return index;
     }
 
     /**
-     * Returns the complement of the given automaton. The given automaton shall
-     * be made complete if it's not already so.
+     * Returns the complement of the given automaton. The given automaton shall be made complete if
+     * it's not already so.
      * 
      * @param index
-     *            - the index to the automaton from which the complement is
-     *            wished.
+     *            - the index to the automaton from which the complement is wished.
      * @return the index to the complemented automaton.
      */
     public int complement(int index) {
@@ -556,7 +462,7 @@ public class Controller {
         Automaton complement = null;
 
         if (automaton.isNonDeterministic() || automaton.hasEpsilonTransitions()) {
-//            complement = automatons.get(convertNFAtoDFA(index));
+            // complement = automatons.get(convertNFAtoDFA(index));
             complement = automatons.get(determinize(index));
         } else {
             complement = new Automaton(automaton);
@@ -669,8 +575,7 @@ public class Controller {
     }
 
     /**
-     * Copies the transitions from the source automaton to the destination
-     * automaton.
+     * Copies the transitions from the source automaton to the destination automaton.
      * 
      * @param source
      *            - the automaton whose transitions shall be copied.
