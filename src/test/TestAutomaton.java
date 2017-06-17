@@ -29,8 +29,10 @@ public class TestAutomaton {
         String inputB = null;
 //        inputA = "(0?1)*0?";
 //        inputB = "(1?0)*1?";
-        inputA = "(aaa)*";
-        inputB = "(aaaaaa)*";
+//        inputA = "(aaa)*";    // #a's multiple of 3 
+//        inputB = "(aaaaaa)*"; // #a's multiple of 6
+        inputA = "(a|b)*";
+        inputB = "(a*|b*)*";
         int indexA = Controller.instance().createRegularExpression(inputA);
         int indexB = Controller.instance().createRegularExpression(inputB);
         Controller.instance().checkEquivalenceOfRegularLanguages(indexA, indexB);
