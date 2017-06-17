@@ -18,24 +18,41 @@ import model.exception.AutomatonAlreadyDeterministicException;
 import model.exception.AutomatonAlreadyMinimumException;
 import model.exception.AutomatonIsEmptyException;
 import model.regex.RegExParser;
+import model.regex.RegExTree;
 
 public class Controller {
 
     private static final String NON_DETERMINISTIC = "Automaton is non-deterministic and shall be converted to a DFA:";
     private static Controller instance = new Controller();
     private List<Automaton> automatons;
+    private List<RegExTree> trees;
 
     private Controller() {
         automatons = new ArrayList<>();
+        trees = new ArrayList<>();
     }
 
     public static Controller instance() {
         return instance;
     }
 
-    public void convertRegExToAutomaton(String input) {
-        Automaton automaton = new RegExParser(input).parse().convertToDFA();
-        automaton.print();
+    public int createRegularExpression(String input) {
+        RegExTree tree = new RegExParser(input).parse();
+        return addRegularExpression(tree);
+    }
+
+    private int addRegularExpression(RegExTree tree) {
+        trees.add(tree);
+        return trees.size() - 1;
+    }
+
+    public int convertRegExToAutomaton(int index) {
+        Automaton dfa = trees.get(index).convertToDFA();
+        index = automatons.indexOf(dfa);
+        if (index == -1) {
+            index = addAutomaton(dfa);
+        }
+        return index;
     }
 
     /**
@@ -118,7 +135,6 @@ public class Controller {
 
         if (automaton.isNonDeterministic()) {
             System.out.println(NON_DETERMINISTIC);
-            // index = convertNFAtoDFA(index);
             index = determinize(index);
             automaton = automatons.get(index);
         } else if (automaton.isMinimum()) {
@@ -140,6 +156,10 @@ public class Controller {
         return index;
     }
 
+    private Automaton removeLastAutomaton() {
+        return automatons.remove(automatons.size()-1);
+    }
+
     /**
      * Remove all unreachable states from the automaton.
      * 
@@ -147,7 +167,7 @@ public class Controller {
      *            - the automaton from which any unreachable stat shall be removed.
      */
     private void removeUnreachableStates(int index) {
-        System.out.print("Removing unreachable states... ");
+        System.out.print("Removing unreachable states from " + index + "... ");
 
         Automaton automaton = automatons.get(index);
         Set<State> unreachable = new HashSet<>(automaton.states());
@@ -218,7 +238,7 @@ public class Controller {
     }
 
     private int mergeEquivalentStates(int index) throws AutomatonIsEmptyException, AutomatonAlreadyMinimumException {
-        System.out.print("Merging equivalent states... ");
+        System.out.print("Merging equivalent states of " + index + "... ");
 
         Automaton automaton = automatons.get(index);
         if (automaton.states().isEmpty()) {
@@ -336,6 +356,14 @@ public class Controller {
         return index;
     }
 
+    /**
+     * Converts the automaton referenced by the index parameter into a deterministic automaton and
+     * returns the index to the new automaton.
+     * 
+     * @param index
+     *            - the index to the non-deterministic automaton.
+     * @return the index to the new automaton.
+     */
     public int determinize(int index) {
         Automaton nfa = automatons.get(index);
         boolean hasEpsilon = nfa.hasEpsilonTransitions();
@@ -383,7 +411,7 @@ public class Controller {
                         toState = new State(toLabels);
                     }
                     transitions.add(toState);
-                    if (dfaStates.add(toState)) {
+                    if (!toState.equals(State.ERROR_STATE) && dfaStates.add(toState)) {
                         pendingStates.add(toState);
                     }
                 }
@@ -419,16 +447,100 @@ public class Controller {
         return index;
     }
 
+    /**
+     * Returns the epsilon closure of all states in the given automaton in a map.
+     * 
+     * @param nfa
+     *            - the automaton whose epsilon closure is wished.
+     * @return - the closure map.
+     */
     private Map<State, State> epsilonClosuresFor(Automaton nfa) {
         Map<State, State> closures = new HashMap<>();
         System.out.println("NDFAe closure:");
         for (State state : nfa.states()) {
             State closure = nfa.epsilonClosure(state);
             closures.put(state, closure);
-            System.out.println(closure);
+            System.out.println(state + " --> " + closure);
         }
         System.out.println();
         return closures;
+    }
+
+    /**
+     * Checks for the equivalence between two regular languages denoted by two regular expressions.
+     * 
+     * @param indexA
+     *            - the index to the first regular expression tree.
+     * @param indexB
+     *            - the index to the second regular expression tree.
+     * @return 0 if A == B; -1 if A is in B; 1 if B is in A;
+     */
+    public String checkEquivalenceOfRegularLanguages(int indexA, int indexB) {
+        System.out.println("Checking equivalence of " + indexA + " and " + indexB);
+
+        Automaton automatonA = trees.get(indexA).getDfa();
+        indexA = automatons.indexOf(automatonA);
+        if (indexA == -1) {
+            indexA = addAutomaton(automatonA);
+        }
+        try {
+            indexA = minimize(indexA);
+            automatonA = automatons.get(indexA);
+        } catch (AutomatonAlreadyMinimumException e) {
+            System.out.println("Automaton is already minimum.");
+            removeLastAutomaton();
+        }
+
+        Automaton automatonB = trees.get(indexB).getDfa();
+        indexB = automatons.indexOf(automatonB);
+        if (indexB == -1) {
+            indexB = addAutomaton(automatonB);
+        }
+        try {
+            indexB = minimize(indexB);
+            automatonB = automatons.get(indexB);
+        } catch (AutomatonAlreadyMinimumException e) {
+            System.out.println("Automaton is already minimum.");
+            removeLastAutomaton();
+        }
+
+        // automatonB.renameStatesBasedOn(automatonA);
+
+        Automaton AminusB = automatons.get(difference(indexA, indexB));
+        System.out.println("A minus B:");
+        printAutomaton(addAutomaton(AminusB));
+
+        System.out.println();
+        Automaton BminusA = automatons.get(difference(indexB, indexA));
+        System.out.println("B minus A:");
+        printAutomaton(addAutomaton(BminusA));
+        String equality = null;
+
+        if (AminusB.isEmpty() && BminusA.isEmpty()) {
+            equality = "A == B";
+        } else if (AminusB.isEmpty() && !BminusA.isEmpty()) {
+            equality = "A is in B";
+        } else if (!AminusB.isEmpty() && BminusA.isEmpty()) {
+            equality = "B is in A";
+        } else {
+            equality = "A is not in B and B is not in A";
+        }
+        System.out.println(equality);
+        return equality;
+    }
+
+    /**
+     * Returns the difference A - B between two automatons.
+     * 
+     * @param indexA
+     *            - the index to the first automaton.
+     * @param indexB
+     *            - the index to the second automaton.
+     * @return the index to the new automaton.
+     */
+    public int difference(int indexA, int indexB) {
+        System.out.println("Starting difference of " + indexA + " and " + indexB);
+        return intersection(indexA, complement(indexB));
     }
 
     /**

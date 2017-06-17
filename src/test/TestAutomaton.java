@@ -19,7 +19,30 @@ public class TestAutomaton {
         // testMinimization();
         // testUnion();
         // testComplement();
-        testIntersection();
+        // testIntersection();
+        // testDifference();
+        testEquivalence();
+    }
+
+    private static void testEquivalence() {
+        String inputA = null;
+        String inputB = null;
+//        inputA = "(0?1)*0?";
+//        inputB = "(1?0)*1?";
+        inputA = "(aaa)*";
+        inputB = "(aaaaaa)*";
+        int indexA = Controller.instance().createRegularExpression(inputA);
+        int indexB = Controller.instance().createRegularExpression(inputB);
+        Controller.instance().checkEquivalenceOfRegularLanguages(indexA, indexB);
+    }
+
+    private static void testDifference() {
+        int index, indexA, indexB;
+        indexA = createAutomaton(11);
+        indexB = createAutomaton(12);
+        index = Controller.instance().difference(indexA, indexB);
+        System.out.println("Resulting automaton:");
+        printAutomaton(index);
     }
 
     private static void testIntersection() {
@@ -203,7 +226,7 @@ public class TestAutomaton {
         // String input = "b?(ab?ab?)*ab?");
         // String input = "l(u?d|u?l)*");
         // String input = "(0|1(01*0)*1)+");
-        // String input = "1?1?(0??011?)*0?0?");
+        // String input = "1?1?(0?011?)*0?0?");
         RegExTree tree = new RegExParser(input).parse(); // OK
         System.out.println("Generated tree: " + tree);
         System.out.println();

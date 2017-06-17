@@ -15,12 +15,14 @@ public class Automaton {
 
     public final static String EPSILON = "&";
 
+    private boolean empty;
     private boolean minimum;
     private State initialState;
     private List<Character> label;
     private List<String> vocabulary;
     private Set<State> acceptingStates;
     private Map<State, List<State>> transitions;
+
 
     public Automaton() {
         init();
@@ -55,6 +57,7 @@ public class Automaton {
     }
 
     private void init() {
+        empty = false;
         minimum = false;
         transitions = new LinkedHashMap<>();
         acceptingStates = new HashSet<>();
@@ -246,6 +249,7 @@ public class Automaton {
     public void removeDeadStates(Set<State> deadStates) {
         if (deadStates.contains(initialState)) {
             initialState = null;
+            empty = true;
         }
 
         // Remove transitions from the dead states
@@ -427,5 +431,9 @@ public class Automaton {
                 addTransitions(transition.getKey(), transition.getValue());
             }
         }
+    }
+
+    public boolean isEmpty() {
+        return empty;
     }
 }

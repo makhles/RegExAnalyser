@@ -18,6 +18,7 @@ public class RegExTree {
     private RegEx root;
     private Set<String> vocabulary;
     private RegEx lambda;
+    private Automaton dfa;
 
     public RegExTree(RegEx root) {
         this.root = root;
@@ -45,7 +46,7 @@ public class RegExTree {
         Map<State, Set<RegEx>> compositions = new HashMap<>();
         Queue<State> pendingStates = new LinkedList<>();
         Set<RegEx> currentComposition = root.moveDown();
-        Automaton dfa = new Automaton(new ArrayList<>(vocabulary));
+        dfa = new Automaton(new ArrayList<>(vocabulary));
         State currentState = new State(dfa.nextLabel());
 
         dfa.setInitialState(currentState);
@@ -93,6 +94,13 @@ public class RegExTree {
                 }
             }
             dfa.addTransitions(currentState, toStates);
+        }
+        return dfa;
+    }
+
+    public Automaton getDfa() {
+        if (dfa == null) {
+            dfa = convertToDFA();
         }
         return dfa;
     }
