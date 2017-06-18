@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.Vector;
 
 import model.automaton.Automaton;
 import model.automaton.State;
@@ -708,5 +709,42 @@ public class Controller {
         System.out.println();
         automatons.get(index).print();
         System.out.println();
+    }
+
+    public Vector<String> columnNamesFromAutomaton(int index) {
+        Vector<String> columnNames = new Vector<>();
+        columnNames.add("Initial");
+        columnNames.add("Accepting");
+        columnNames.add("\u03B4");
+        columnNames.addAll(automatons.get(index).vocabulary());
+        return columnNames;
+    }
+
+    public Vector<Vector<String>> dataFromAutomaton(int index) {
+        Vector<Vector<String>> data = new Vector<>();
+        Automaton automaton = automatons.get(index);
+        for (State state : automaton.states()) {
+            Vector<String> row = new Vector<>();
+            if (state.equals(automaton.initial())) {
+                row.add("->");
+            } else {
+                row.add("");
+            }
+            if (automaton.acceptingStates().contains(state)) {
+                row.add("*");
+            } else {
+                row.add("");
+            }
+            row.add(state.labels().toString());
+            for (State toState : automaton.transitionsFrom(state)) {
+//                StringBuilder fullLabel = new StringBuilder();
+//                for (String label : toState.labels()) {
+//                    fullLabel.append(label);
+//                }
+                row.add(toState.labels().toString());
+            }
+            data.add(row);
+        }
+        return data;
     }
 }
