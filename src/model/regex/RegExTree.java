@@ -15,6 +15,7 @@ import model.automaton.State;
 
 public class RegExTree {
 
+    private String input;
     private RegEx root;
     private Set<String> vocabulary;
     private RegEx lambda;
@@ -103,5 +104,13 @@ public class RegExTree {
             dfa = convertToDFA();
         }
         return dfa;
+    }
+
+    public void setInput(String input) {
+        this.input = input;
+    }
+
+    public String input() {
+        return input;
     }
 }

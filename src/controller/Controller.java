@@ -27,10 +27,12 @@ public class Controller {
     private static Controller instance = new Controller();
     private List<Automaton> automatons;
     private List<RegExTree> trees;
+    private Map<RegExTree, Automaton> regexToAutomaton;
 
     private Controller() {
         automatons = new ArrayList<>();
         trees = new ArrayList<>();
+        regexToAutomaton = new HashMap<>();
     }
 
     public static Controller instance() {
@@ -39,6 +41,7 @@ public class Controller {
 
     public int createRegularExpression(String input) {
         RegExTree tree = new RegExParser(input).parse();
+        tree.setInput(input);
         return addRegularExpression(tree);
     }
 
@@ -47,13 +50,33 @@ public class Controller {
         return trees.size() - 1;
     }
 
+    public void removeRegex(int index) {
+        RegExTree tree = trees.remove(index);
+        regexToAutomaton.remove(tree);
+    }
+    
     public int convertRegExToAutomaton(int index) {
-        Automaton dfa = trees.get(index).convertToDFA();
-        index = automatons.indexOf(dfa);
-        if (index == -1) {
-            index = addAutomaton(dfa);
+        int automatonIndex;
+        RegExTree tree = trees.get(index);
+        Automaton automaton = regexToAutomaton.get(tree);
+        if (automaton == null) {
+            Automaton dfa = tree.convertToDFA();
+            automatonIndex = addAutomaton(dfa);
+            regexToAutomaton.put(tree, dfa);
+        } else {
+            automatonIndex = automatons.indexOf(automaton);
         }
-        return index;
+        return automatonIndex;
+    }
+
+    public int getAutomatonForRegex(int regexIndex) {
+        Automaton automaton = regexToAutomaton.get(trees.get(regexIndex));
+        
+//        Integer automatonIndex = regexToAutomaton.get(regexIndex);
+        if (automaton == null) {
+            return -1;
+        }
+        return automatons.indexOf(automaton);
     }
 
     /**
@@ -158,7 +181,7 @@ public class Controller {
     }
 
     private Automaton removeLastAutomaton() {
-        return automatons.remove(automatons.size()-1);
+        return automatons.remove(automatons.size() - 1);
     }
 
     /**
@@ -737,14 +760,18 @@ public class Controller {
             }
             row.add(state.labels().toString());
             for (State toState : automaton.transitionsFrom(state)) {
-//                StringBuilder fullLabel = new StringBuilder();
-//                for (String label : toState.labels()) {
-//                    fullLabel.append(label);
-//                }
+                // StringBuilder fullLabel = new StringBuilder();
+                // for (String label : toState.labels()) {
+                // fullLabel.append(label);
+                // }
                 row.add(toState.labels().toString());
             }
             data.add(row);
         }
         return data;
+    }
+
+    public String getRegexInputFor(int index) {
+        return trees.get(index).input();
     }
 }

@@ -5,8 +5,10 @@ import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 
@@ -24,6 +26,8 @@ import javax.swing.JTextArea;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
@@ -48,6 +52,7 @@ public class RegExAnalyser extends JFrame {
 
     private JList<String> regexList;
     private JList<String> automatonsList;
+    private List<Integer> selectedRegex;
 
     private DefaultListModel<String> regexListModel;
     private DefaultListModel<String> automatonListModel;
@@ -60,7 +65,9 @@ public class RegExAnalyser extends JFrame {
     }
 
     private void removeRegex() {
-        regexListModel.remove(regexList.getSelectedIndex());
+        int index = regexList.getSelectedIndex();
+        controller.removeRegex(index);
+        regexListModel.remove(index);
         resetInputPanel();
         resetOutputPanel();
         if (regexListModel.size() == 0) {
@@ -122,6 +129,44 @@ public class RegExAnalyser extends JFrame {
         }
     }
 
+    private void createListSelectionListeners() {
+        regexList.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+            public void valueChanged(ListSelectionEvent e) {
+                onRegexSelection(e);
+            }
+        });
+    }
+
+    private void onRegexSelection(ListSelectionEvent e) {
+        ListSelectionModel lsm = (ListSelectionModel) e.getSource();
+        if (!e.getValueIsAdjusting() && !lsm.isSelectionEmpty()) {
+            int minIndex = lsm.getMinSelectionIndex();
+            int maxIndex = lsm.getMaxSelectionIndex();
+            selectedRegex = new ArrayList<>();
+            for (int i = minIndex; i <= maxIndex; i++) {
+                if (lsm.isSelectedIndex(i)) {
+                    selectedRegex.add(i);
+                }
+            }
+            cleanInputPanel();
+            regexInputPanel();
+            if (selectedRegex.size() == 1) {
+                btnRemoveRegex.setEnabled(true);
+                btnRegexToDFA.setEnabled(true);
+                regexInputArea.setText(controller.getRegexInputFor(minIndex));
+                int index = controller.getAutomatonForRegex(minIndex);
+                if (index == -1) {
+                    resetOutputPanel();
+                } else {
+                    showAutomaton(index);
+                }
+            } else {
+                btnRemoveRegex.setEnabled(false);
+                btnRegexToDFA.setEnabled(false);
+            }
+        }
+    }
+
     private void createActionListeners() {
 
         // Regex related
@@ -174,7 +219,7 @@ public class RegExAnalyser extends JFrame {
         leftPanel.add(btnNewRegex, "growx");
         leftPanel.add(btnRegexToDFA, "growx");
         leftPanel.add(btnRemoveRegex, "growx");
-        
+
         btnRegexToDFA.setEnabled(false);
         btnRemoveRegex.setEnabled(false);
 
@@ -221,7 +266,7 @@ public class RegExAnalyser extends JFrame {
 
     private void regexInputPanel() {
         JPanel regexInputPanel = new JPanel(new MigLayout("", "[l][r]", "[c][c][c]"));
-        regexInputArea = new JTextArea(3, 30);
+        regexInputArea = new JTextArea(3, 32);
 
         regexInputPanel.add(new JLabel("Enter the regular expression:"), "span,wrap");
         regexInputPanel.add(regexInputArea, "span,wrap");
@@ -285,6 +330,7 @@ public class RegExAnalyser extends JFrame {
 
         addComponentsToPane(frame.getContentPane());
         createActionListeners();
+        createListSelectionListeners();
 
         // Display the window.
         frame.pack();
