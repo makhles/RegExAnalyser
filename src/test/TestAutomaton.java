@@ -75,7 +75,7 @@ public class TestAutomaton {
     private static void testMinimization() {
         int index = createAutomaton(8);
         try {
-            index = Controller.instance().minimize(index);
+            index = Controller.instance().minimise(index);
         } catch (AutomatonAlreadyMinimumException e) {
             System.out.println(e.message());
         }
@@ -84,7 +84,7 @@ public class TestAutomaton {
     private static void testClosure() {
         int index = createAutomaton(3);
         // index = Controller.instance().convertNFAtoDFA(index);
-        index = Controller.instance().determinize(index);
+        index = Controller.instance().determinise(index);
         System.out.println("Resulting automaton:");
         printAutomaton(index);
     }

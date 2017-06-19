@@ -33,6 +33,8 @@ import javax.swing.table.DefaultTableModel;
 
 import controller.Controller;
 import model.exception.AutomatonAlreadyDeterministicException;
+import model.exception.AutomatonAlreadyMinimumException;
+import model.exception.AutomatonIsEmptyException;
 import net.miginfocom.swing.MigLayout;
 
 public class RegExAnalyser extends JFrame {
@@ -55,6 +57,7 @@ public class RegExAnalyser extends JFrame {
     private JButton btnRemoveRegex = new JButton("Remove");
     private JButton btnRemoveAutomaton = new JButton("Remove");
     private JButton btnNFAtoDFA = new JButton("NFA to DFA");
+    private JButton btnMinimise = new JButton("Minimise");
 
     private JList<String> regexList;
     private JList<String> automatonList;
@@ -80,10 +83,28 @@ public class RegExAnalyser extends JFrame {
                 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'));
     }
 
+
+    private void minimise() {
+        // TODO Auto-generated method stub
+        try {
+            int lastIndex = automatonList.getSelectedIndex();
+            int index = controller.minimise(lastIndex);
+            lastIndex++; // Determinised automaton
+            String dfa = "DFA " + lastIndex;
+            String dfaMin = "DFA " + index + " (min)";
+            addAutomaton(lastIndex, dfa);
+            addAutomaton(index, dfaMin);
+        } catch (AutomatonAlreadyMinimumException e) {
+            showInputWarningMessage(e.message());
+        } catch (AutomatonIsEmptyException e) {
+            showInputWarningMessage(e.message());
+        }
+    }
+    
     private void makeDeterministic() {
         try {
             int index = automatonList.getSelectedIndex();
-            index = controller.determinize(index);
+            index = controller.determinise(index);
             String name = "DFA " + index;
             addAutomaton(index, name);
         } catch (AutomatonAlreadyDeterministicException e) {
@@ -99,6 +120,8 @@ public class RegExAnalyser extends JFrame {
         resetOutputPanel();
         if (automatonListModel.size() == 0) {
             btnRemoveAutomaton.setEnabled(false);
+            btnNFAtoDFA.setEnabled(false);
+            btnMinimise.setEnabled(false);
             // TODO: add other buttons
         }
     }
@@ -329,12 +352,14 @@ public class RegExAnalyser extends JFrame {
             if (selectedAutomatons.size() == 1) {
                 btnRemoveAutomaton.setEnabled(true);
                 btnNFAtoDFA.setEnabled(true);
+                btnMinimise.setEnabled(true);
                 // TODO: add other buttons
                 resetOutputPanel();
                 showAutomaton(minIndex);
             } else {
                 btnRemoveAutomaton.setEnabled(false);
                 btnNFAtoDFA.setEnabled(false);
+                btnMinimise.setEnabled(false);
                 // TODO: add other buttons
             }
         }
@@ -420,6 +445,11 @@ public class RegExAnalyser extends JFrame {
                 makeDeterministic();
             }
         });
+        btnMinimise.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent event) {
+                minimise();
+            }
+        });
     }
 
     public void addComponentsToPane(Container pane) {
@@ -479,10 +509,12 @@ public class RegExAnalyser extends JFrame {
         rightPanel.add(rightScrollPane);
         rightPanel.add(btnNewAutomaton, "growx");
         rightPanel.add(btnNFAtoDFA, "growx");
+        rightPanel.add(btnMinimise, "growx");
         rightPanel.add(btnRemoveAutomaton, "growx");
 
         btnNFAtoDFA.setEnabled(false);
         btnRemoveAutomaton.setEnabled(false);
+        btnMinimise.setEnabled(false);
         // TODO: add buttons
 
         pane.setLayout(new BorderLayout(10, 10));

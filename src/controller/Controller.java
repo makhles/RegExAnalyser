@@ -154,12 +154,12 @@ public class Controller {
      * @return - the index to the minimized automaton.
      * @throws AutomatonAlreadyMinimumException
      */
-    public int minimize(int index) throws AutomatonAlreadyMinimumException, AutomatonIsEmptyException {
+    public int minimise(int index) throws AutomatonAlreadyMinimumException, AutomatonIsEmptyException {
         Automaton automaton = automatons.get(index);
 
         if (automaton.isNonDeterministic()) {
             System.out.println(NON_DETERMINISTIC);
-            index = determinize(index);
+            index = determinise(index);
             automaton = automatons.get(index);
         } else if (automaton.isMinimum()) {
             throw new AutomatonAlreadyMinimumException();
@@ -167,12 +167,13 @@ public class Controller {
 
         // Creates a copy automaton so that it's safe to
         // remove unreachable and dead states
-        index = addAutomaton(new Automaton(automaton));
+        automaton = new Automaton(automaton);
+        index = addAutomaton(automaton);
 
         try {
-            removeUnreachableStates(index);
-            removeDeadStates(index);
-            index = mergeEquivalentStates(index);
+            removeUnreachableStates(automaton);
+            removeDeadStates(automaton);
+            index = mergeEquivalentStates(automaton);
         } catch (Exception e) {
             throw e;
         }
@@ -191,10 +192,10 @@ public class Controller {
      *            - the automaton from which any unreachable stat shall be
      *            removed.
      */
-    private void removeUnreachableStates(int index) {
-        System.out.print("Removing unreachable states from " + index + "... ");
+    private void removeUnreachableStates(Automaton automaton) {
+//        System.out.print("Removing unreachable states from " + index + "... ");
 
-        Automaton automaton = automatons.get(index);
+//        Automaton automaton = automatons.get(index);
         Set<State> unreachable = new HashSet<>(automaton.states());
         Queue<State> toBeVisited = new LinkedList<>();
 
@@ -218,7 +219,7 @@ public class Controller {
             System.out.println("done.");
             System.out.println("Unreachable states removed: " + unreachable);
             System.out.println("Resulting automaton:");
-            printAutomaton(index);
+            printAutomaton(automaton);
         }
     }
 
@@ -228,10 +229,10 @@ public class Controller {
      * @param automaton
      *            - the automaton from which any dead states shall be removed.
      */
-    private void removeDeadStates(int index) throws AutomatonIsEmptyException {
-        System.out.print("Removing dead states from " + index + "... ");
+    private void removeDeadStates(Automaton automaton) throws AutomatonIsEmptyException {
+//        System.out.print("Removing dead states from " + index + "... ");
 
-        Automaton automaton = automatons.get(index);
+//        Automaton automaton = automatons.get(index);
         if (automaton.states().isEmpty()) {
             throw new AutomatonIsEmptyException();
         }
@@ -258,14 +259,14 @@ public class Controller {
             System.out.println("done.");
             System.out.println("Dead states removed: " + dead);
             System.out.println("Resulting automaton:");
-            printAutomaton(index);
+            printAutomaton(automaton);
         }
     }
 
-    private int mergeEquivalentStates(int index) throws AutomatonIsEmptyException, AutomatonAlreadyMinimumException {
-        System.out.print("Merging equivalent states of " + index + "... ");
+    private int mergeEquivalentStates(Automaton automaton) throws AutomatonIsEmptyException, AutomatonAlreadyMinimumException {
+//        System.out.print("Merging equivalent states of " + index + "... ");
 
-        Automaton automaton = automatons.get(index);
+//        Automaton automaton = automatons.get(index);
         if (automaton.states().isEmpty()) {
             throw new AutomatonIsEmptyException();
         }
@@ -364,6 +365,7 @@ public class Controller {
         }
         equivalent.setInitialState(statesMapping.get(automaton.initial()));
         equivalent.setMinimum(true);
+        int index;
 
         // User might have given the minimum automaton
         if (automaton.states().size() == equivalent.states().size()) {
@@ -373,7 +375,7 @@ public class Controller {
             System.out.println("done.");
             System.out.println("Equivalent classes: " + classes);
             System.out.println("Resulting automaton:");
-            printAutomaton(addAutomaton(equivalent));
+            printAutomaton(equivalent);
             System.out.println("Renamed automaton:");
             index = addAutomaton(equivalent.renameTupleStatesToSingleState());
             printAutomaton(index);
@@ -389,7 +391,7 @@ public class Controller {
      *            - the index to the non-deterministic automaton.
      * @return the index to the new automaton.
      */
-    public int determinize(int index) throws AutomatonAlreadyDeterministicException {
+    public int determinise(int index) throws AutomatonAlreadyDeterministicException {
         Automaton nfa = automatons.get(index);
         boolean hasEpsilon = nfa.hasEpsilonTransitions();
 
@@ -515,7 +517,7 @@ public class Controller {
             indexA = addAutomaton(automatonA);
         }
         try {
-            indexA = minimize(indexA);
+            indexA = minimise(indexA);
             automatonA = automatons.get(indexA);
         } catch (AutomatonAlreadyMinimumException e) {
             System.out.println("Automaton is already minimum.");
@@ -528,7 +530,7 @@ public class Controller {
             indexB = addAutomaton(automatonB);
         }
         try {
-            indexB = minimize(indexB);
+            indexB = minimise(indexB);
             automatonB = automatons.get(indexB);
         } catch (AutomatonAlreadyMinimumException e) {
             System.out.println("Automaton is already minimum.");
@@ -587,7 +589,7 @@ public class Controller {
     public int intersection(int indexA, int indexB) {
         System.out.println("Starting intersection of " + indexA + " and " + indexB);
         int index = complement(union(complement(indexA), complement(indexB)));
-        removeDeadStates(index);
+        removeDeadStates(automatons.get(index));
         return index;
     }
 
@@ -607,7 +609,7 @@ public class Controller {
 
         if (automaton.isNonDeterministic() || automaton.hasEpsilonTransitions()) {
             // complement = automatons.get(convertNFAtoDFA(index));
-            complement = automatons.get(determinize(index));
+            complement = automatons.get(determinise(index));
         } else {
             complement = new Automaton(automaton);
         }
