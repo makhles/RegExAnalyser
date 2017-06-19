@@ -32,6 +32,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
 import controller.Controller;
+import model.exception.AutomatonAlreadyDeterministicException;
 import net.miginfocom.swing.MigLayout;
 
 public class RegExAnalyser extends JFrame {
@@ -53,6 +54,7 @@ public class RegExAnalyser extends JFrame {
     private JButton btnRegexToDFA = new JButton("Convert to DFA");
     private JButton btnRemoveRegex = new JButton("Remove");
     private JButton btnRemoveAutomaton = new JButton("Remove");
+    private JButton btnNFAtoDFA = new JButton("NFA to DFA");
 
     private JList<String> regexList;
     private JList<String> automatonList;
@@ -76,6 +78,17 @@ public class RegExAnalyser extends JFrame {
 
         stateSymbols.addAll(Arrays.asList('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
                 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'));
+    }
+
+    private void makeDeterministic() {
+        try {
+            int index = automatonList.getSelectedIndex();
+            index = controller.determinize(index);
+            String name = "DFA " + index;
+            addAutomaton(index, name);
+        } catch (AutomatonAlreadyDeterministicException e) {
+            showInputWarningMessage(e.message());
+        }
     }
 
     private void removeAutomaton() {
@@ -183,7 +196,6 @@ public class RegExAnalyser extends JFrame {
                 // Initial state column
                 if (col == 0 && value != null && value.equals("->")) {
                     initialState = (String) model.getValueAt(row, 2);
-                    ;
                 }
 
                 // Accepting state column
@@ -203,12 +215,30 @@ public class RegExAnalyser extends JFrame {
                 // Transitions columns
                 if (col > 2) {
                     if (value != null && !value.isEmpty()) {
-                        if (states.contains(value)) {
-                            rowTransitions.add(value);
+                        if (value.length() > 1) {
+                            if (value.charAt(0) == ',') {
+                                errorMessage = "State " + value + " at cell (" + row + "," + col + ") is invalid.";
+                                showInputErrorMessage(errorMessage);
+                                return;
+                            }
+                            boolean validState = true;
+                            for (int i = 0; i < value.length(); i++) {
+                                char c = value.charAt(i);
+                                if (!states.contains(String.valueOf(c)) && c != ',') {
+                                    validState = false;
+                                }
+                            }
+                            if (validState) {
+                                rowTransitions.add(value);
+                            }
                         } else {
-                            errorMessage = "State " + value + " at cell (" + row + "," + col + ") is invalid.";
-                            showInputErrorMessage(errorMessage);
-                            return;
+                            if (states.contains(value)) {
+                                rowTransitions.add(value);
+                            } else {
+                                errorMessage = "State " + value + " at cell (" + row + "," + col + ") is invalid.";
+                                showInputErrorMessage(errorMessage);
+                                return;
+                            }
                         }
                     } else {
                         rowTransitions.add("-");
@@ -225,13 +255,23 @@ public class RegExAnalyser extends JFrame {
 
         // Everything looks fine...
         int index = controller.createAutomaton(transitions, initialState);
-        automatonListModel.addElement("AF " + index);
+        String name = "FA " + index;
+        addAutomaton(index, name);
+    }
+
+    private void addAutomaton(int index, String name) {
+        automatonListModel.addElement(name);
         automatonList.setSelectedIndex(index);
         btnRemoveAutomaton.setEnabled(true);
+        btnNFAtoDFA.setEnabled(true);
     }
 
     private void showInputErrorMessage(String message) {
         JOptionPane.showMessageDialog(this, message, "Input error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    private void showInputWarningMessage(String message) {
+        JOptionPane.showMessageDialog(this, message, "Warning", JOptionPane.WARNING_MESSAGE);
     }
 
     private void convertRegexToDFA() {
@@ -288,11 +328,13 @@ public class RegExAnalyser extends JFrame {
             regexList.clearSelection();
             if (selectedAutomatons.size() == 1) {
                 btnRemoveAutomaton.setEnabled(true);
+                btnNFAtoDFA.setEnabled(true);
                 // TODO: add other buttons
                 resetOutputPanel();
                 showAutomaton(minIndex);
             } else {
                 btnRemoveAutomaton.setEnabled(false);
+                btnNFAtoDFA.setEnabled(false);
                 // TODO: add other buttons
             }
         }
@@ -373,6 +415,11 @@ public class RegExAnalyser extends JFrame {
                 removeAutomaton();
             }
         });
+        btnNFAtoDFA.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent event) {
+                makeDeterministic();
+            }
+        });
     }
 
     public void addComponentsToPane(Container pane) {
@@ -431,9 +478,12 @@ public class RegExAnalyser extends JFrame {
         rightScrollPane.setPreferredSize(new Dimension(180, 400));
         rightPanel.add(rightScrollPane);
         rightPanel.add(btnNewAutomaton, "growx");
+        rightPanel.add(btnNFAtoDFA, "growx");
         rightPanel.add(btnRemoveAutomaton, "growx");
 
+        btnNFAtoDFA.setEnabled(false);
         btnRemoveAutomaton.setEnabled(false);
+        // TODO: add buttons
 
         pane.setLayout(new BorderLayout(10, 10));
         pane.add(leftPanel, BorderLayout.WEST);

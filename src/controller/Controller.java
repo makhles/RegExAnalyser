@@ -389,7 +389,7 @@ public class Controller {
      *            - the index to the non-deterministic automaton.
      * @return the index to the new automaton.
      */
-    public int determinize(int index) {
+    public int determinize(int index) throws AutomatonAlreadyDeterministicException {
         Automaton nfa = automatons.get(index);
         boolean hasEpsilon = nfa.hasEpsilonTransitions();
 
@@ -400,6 +400,11 @@ public class Controller {
             if (hasEpsilon) {
                 vocabulary.remove(Automaton.EPSILON);
                 closures = epsilonClosuresFor(nfa);
+            } else {
+                closures = new HashMap<>();
+                for (State state : nfa.states()) {
+                    closures.put(state, state);
+                }
             }
             Automaton dfa = new Automaton(vocabulary);
 
@@ -460,8 +465,7 @@ public class Controller {
                 }
             }
 
-            index = addAutomaton(dfa);
-            printAutomaton(index);
+            printAutomaton(dfa);
             System.out.println("Renamed automaton:");
             Automaton renamed = dfa.renameTupleStatesToSingleState();
             index = addAutomaton(renamed);
@@ -733,6 +737,12 @@ public class Controller {
         }
     }
 
+    public void printAutomaton(Automaton automaton) {
+        System.out.println();
+        automaton.print();
+        System.out.println();
+    }
+    
     public void printAutomaton(int index) {
         System.out.println();
         automatons.get(index).print();
