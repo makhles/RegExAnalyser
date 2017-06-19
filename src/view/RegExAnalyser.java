@@ -93,8 +93,17 @@ public class RegExAnalyser extends JFrame {
     }
 
     private void intersection() {
-        // TODO Auto-generated method stub
-
+        int index;
+        int modelSize = automatonListModel.size();
+        int[] indices = automatonList.getSelectedIndices();
+        if (automatonList.getAnchorSelectionIndex() == indices[1]) {
+            index = controller.intersection(indices[0], indices[1]);
+        } else {
+            index = controller.intersection(indices[1], indices[0]);
+        }
+        for (int i = modelSize; i <= index; i++) {
+            addAutomaton(i, controller.automatonName(i));
+        }
     }
 
     private void union() {
@@ -112,32 +121,26 @@ public class RegExAnalyser extends JFrame {
     }
 
     private void complement() {
-        String name;
+        int modelSize = automatonListModel.size();
         int index = automatonList.getSelectedIndex();
         int complementIndex = controller.complement(index);
-        if (complementIndex > index + 1) {
+        if (complementIndex > modelSize) {
             // Input automaton was determinised before complemented
-            index++;
-            name = "DFA " + index;
-            addAutomaton(index, name);
+            addAutomaton(modelSize, controller.automatonName(modelSize));
         }
-        name = "DFA " + complementIndex + " (not " + index + ")";
-        addAutomaton(complementIndex, name);
+        addAutomaton(complementIndex, controller.automatonName(complementIndex));
     }
 
     private void minimise() {
         try {
-            String name;
+            int modelSize = automatonListModel.size();
             int index = automatonList.getSelectedIndex();
             int minIndex = controller.minimise(index);
-            if (minIndex > index + 1) {
+            if (minIndex > modelSize) {
                 // Input automaton was determinised before minimisation
-                index++;
-                name = "DFA " + index;
-                addAutomaton(index, name);
+                addAutomaton(modelSize, controller.automatonName(modelSize));
             }
-            name = "DFA " + minIndex + " (min)";
-            addAutomaton(minIndex, name);
+            addAutomaton(minIndex, controller.automatonName(minIndex));
         } catch (AutomatonAlreadyMinimumException e) {
             showInputWarningMessage(e.message());
         } catch (AutomatonIsEmptyException e) {

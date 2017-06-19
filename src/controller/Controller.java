@@ -42,6 +42,7 @@ public class Controller {
     public int createRegularExpression(String input) {
         RegExTree tree = new RegExParser(input).parse();
         tree.setInput(input);
+        tree.setName("Regex " + trees.size());
         return addRegularExpression(tree);
     }
 
@@ -99,7 +100,8 @@ public class Controller {
 
         checkForConsistency(transitions, initialState); // TODO
 
-        Automaton automaton = new Automaton(transitions.get(0));
+        String name = String.valueOf(automatons.size());
+        Automaton automaton = new Automaton(name, transitions.get(0));
         automaton.setInitialState(new State(initialState));
 
         for (int row = 1; row < transitions.size(); row++) {
@@ -172,9 +174,10 @@ public class Controller {
         automaton = new Automaton(automaton);
 
         try {
+            int size = automaton.states().size();
             removeUnreachableStates(automaton);
             removeDeadStates(automaton);
-            index = mergeEquivalentStates(automaton);
+            index = mergeEquivalentStates(automaton, size);
         } catch (AutomatonAlreadyMinimumException e) {
             if (wasDeterminised) {
                 return index;
@@ -185,6 +188,7 @@ public class Controller {
             throw e;
         }
 
+        automatons.get(index).setName("DFA " + index + " (min)");
         return index;
     }
 
@@ -268,7 +272,8 @@ public class Controller {
         }
     }
 
-    private int mergeEquivalentStates(Automaton automaton) throws AutomatonIsEmptyException, AutomatonAlreadyMinimumException {
+    private int mergeEquivalentStates(Automaton automaton, int size)
+            throws AutomatonIsEmptyException, AutomatonAlreadyMinimumException {
         System.out.print("Merging equivalent states");
 
         if (automaton.states().isEmpty()) {
@@ -348,7 +353,7 @@ public class Controller {
             }
         }
 
-        Automaton equivalent = new Automaton(automaton.vocabulary());
+        Automaton equivalent = new Automaton(automaton.name(), automaton.vocabulary());
         List<State> transitions = null;
 
         for (List<State> equivalentClass : classes) {
@@ -372,7 +377,7 @@ public class Controller {
         int index;
 
         // User might have given the minimum automaton
-        if (automaton.states().size() == equivalent.states().size()) {
+        if (equivalent.states().size() == size) {
             System.out.println("nothing to be done.");
             throw new AutomatonAlreadyMinimumException();
         } else {
@@ -412,7 +417,7 @@ public class Controller {
                     closures.put(state, state);
                 }
             }
-            Automaton dfa = new Automaton(vocabulary);
+            Automaton dfa = new Automaton("DFA for " + nfa.name(), vocabulary);
 
             // Only used to avoid creating duplicate states
             Set<State> dfaStates = new LinkedHashSet<>();
@@ -593,7 +598,9 @@ public class Controller {
     public int intersection(int indexA, int indexB) {
         System.out.println("Starting intersection of " + indexA + " and " + indexB);
         int index = complement(union(complement(indexA), complement(indexB)));
-        removeDeadStates(automatons.get(index));
+        Automaton automaton = automatons.get(index);
+        automaton.setName("DFA " + index + " (" + indexA + " \u2229 " + indexB + ")");
+        removeDeadStates(automaton);
         return index;
     }
 
@@ -612,7 +619,7 @@ public class Controller {
         Automaton complement = null;
 
         if (automaton.isNonDeterministic() || automaton.hasEpsilonTransitions()) {
-            complement = automatons.get(determinise(index));
+            complement = new Automaton(automatons.get(determinise(index)));
         } else {
             complement = new Automaton(automaton);
         }
@@ -629,6 +636,7 @@ public class Controller {
         }
 
         int newIndex = addAutomaton(complement);
+        complement.setName("DFA " + newIndex + " (not " + index + ")");
         System.out.println("Complement of " + index + " is now " + newIndex + ":");
         printAutomaton(newIndex);
 
@@ -643,7 +651,7 @@ public class Controller {
         // Renames the states of B based on states of A
         System.out.println("Renaming states of automaton " + indexB + ":");
         automatonB = automatonB.renameStatesBasedOn(automatonA);
-//        indexB = addAutomaton(automatonB);
+        // indexB = addAutomaton(automatonB);
         System.out.println("Renamed automaton:");
         printAutomaton(automatonB);
 
@@ -653,7 +661,8 @@ public class Controller {
         vocabulary.addAll(automatonB.vocabulary());
         vocabulary.add(Automaton.EPSILON);
 
-        Automaton automaton = new Automaton(new ArrayList<>(vocabulary));
+        String name = "NFA " + automatons.size() + " ("+ indexA + " \u222A " + indexB + ")";
+        Automaton automaton = new Automaton(name, new ArrayList<>(vocabulary));
 
         // Transitions
         copyTransitions(automatonA, automaton);
@@ -747,7 +756,7 @@ public class Controller {
         automaton.print();
         System.out.println();
     }
-    
+
     public void printAutomaton(int index) {
         System.out.println();
         automatons.get(index).print();
@@ -803,5 +812,9 @@ public class Controller {
                 break;
             }
         }
+    }
+
+    public String automatonName(int index) {
+        return automatons.get(index).name();
     }
 }

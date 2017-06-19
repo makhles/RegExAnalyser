@@ -15,6 +15,7 @@ public class Automaton {
 
     public final static String EPSILON = "&";
 
+    private String name;
     private boolean empty;
     private boolean minimum;
     private State initialState;
@@ -23,12 +24,13 @@ public class Automaton {
     private Set<State> acceptingStates;
     private Map<State, List<State>> transitions;
 
-
-    public Automaton() {
+    public Automaton(String name) {
+        this.name = name;
         init();
     }
 
-    public Automaton(List<String> vocabulary) {
+    public Automaton(String name, List<String> vocabulary) {
+        this.name = name;
         this.vocabulary = vocabulary;
         init();
         label = new LinkedList<>();
@@ -271,15 +273,15 @@ public class Automaton {
     }
 
     /**
-     * Returns a copy of this automaton with all states renamed to labels not in use by the
-     * automaton passed as parameter.
+     * Returns a copy of this automaton with all states renamed to labels not in
+     * use by the automaton passed as parameter.
      * 
      * @param automaton
      *            - the automaton which shall provide the labels.
      * @return the copied automaton.
      */
     public Automaton renameTupleStatesToSingleState() {
-        Automaton renamed = new Automaton(vocabulary);
+        Automaton renamed = new Automaton(name, vocabulary);
         Map<State, State> renamingMap = new LinkedHashMap<>();
         Set<String> usedLabels = usedLabels();
         String nextLabel = nextLabel();
@@ -322,7 +324,7 @@ public class Automaton {
     }
 
     public Automaton renameStatesBasedOn(Automaton automaton) {
-        Automaton renamedAutomaton = new Automaton(vocabulary);
+        Automaton renamedAutomaton = new Automaton(name + " (renamed)", vocabulary);
         Map<String, String> labelMapping = new LinkedHashMap<>();
         Map<State, State> stateMapping = new LinkedHashMap<>();
         Set<String> usedLabels = automaton.usedLabels();
@@ -435,5 +437,13 @@ public class Automaton {
 
     public boolean isEmpty() {
         return empty;
+    }
+
+    public String name() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }

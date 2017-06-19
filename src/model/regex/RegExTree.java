@@ -20,6 +20,7 @@ public class RegExTree {
     private Set<String> vocabulary;
     private RegEx lambda;
     private Automaton dfa;
+    private String name;
 
     public RegExTree(RegEx root) {
         this.root = root;
@@ -47,7 +48,7 @@ public class RegExTree {
         Map<State, Set<RegEx>> compositions = new HashMap<>();
         Queue<State> pendingStates = new LinkedList<>();
         Set<RegEx> currentComposition = root.moveDown();
-        dfa = new Automaton(new ArrayList<>(vocabulary));
+        dfa = new Automaton(name, new ArrayList<>(vocabulary));
         State currentState = new State(dfa.nextLabel());
 
         dfa.setInitialState(currentState);
@@ -112,5 +113,9 @@ public class RegExTree {
 
     public String input() {
         return input;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }
