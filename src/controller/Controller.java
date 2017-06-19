@@ -608,7 +608,6 @@ public class Controller {
         Automaton complement = null;
 
         if (automaton.isNonDeterministic() || automaton.hasEpsilonTransitions()) {
-            // complement = automatons.get(convertNFAtoDFA(index));
             complement = automatons.get(determinise(index));
         } else {
             complement = new Automaton(automaton);

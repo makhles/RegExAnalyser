@@ -58,6 +58,10 @@ public class RegExAnalyser extends JFrame {
     private JButton btnRemoveAutomaton = new JButton("Remove");
     private JButton btnNFAtoDFA = new JButton("NFA to DFA");
     private JButton btnMinimise = new JButton("Minimise");
+    private JButton btnUnion = new JButton("Union");
+    private JButton btnIntersection = new JButton("Intersection");
+    private JButton btnComplement = new JButton("Complement");
+    private JButton btnDifference = new JButton("Difference");
 
     private JList<String> regexList;
     private JList<String> automatonList;
@@ -83,9 +87,36 @@ public class RegExAnalyser extends JFrame {
                 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'));
     }
 
+    private void difference() {
+        // TODO Auto-generated method stub
+
+    }
+
+    private void intersection() {
+        // TODO Auto-generated method stub
+
+    }
+
+    private void union() {
+        // TODO Auto-generated method stub
+
+    }
+
+    private void complement() {
+        String name;
+        int index = automatonList.getSelectedIndex();
+        int complementIndex = controller.complement(index);
+        if (complementIndex > index + 1) {
+            // Input automaton was determinised before complemented
+            index++;
+            name = "DFA " + index;
+            addAutomaton(index, name);
+        }
+        name = "DFA " + complementIndex + "(not " + index + ")";
+        addAutomaton(complementIndex, name);
+    }
 
     private void minimise() {
-        // TODO Auto-generated method stub
         try {
             int lastIndex = automatonList.getSelectedIndex();
             int index = controller.minimise(lastIndex);
@@ -100,7 +131,7 @@ public class RegExAnalyser extends JFrame {
             showInputWarningMessage(e.message());
         }
     }
-    
+
     private void makeDeterministic() {
         try {
             int index = automatonList.getSelectedIndex();
@@ -122,7 +153,14 @@ public class RegExAnalyser extends JFrame {
             btnRemoveAutomaton.setEnabled(false);
             btnNFAtoDFA.setEnabled(false);
             btnMinimise.setEnabled(false);
-            // TODO: add other buttons
+            btnUnion.setEnabled(false);
+            btnIntersection.setEnabled(false);
+            btnComplement.setEnabled(false);
+            btnDifference.setEnabled(false);
+        } else if (automatonListModel.size() == 1) {
+            btnUnion.setEnabled(false);
+            btnIntersection.setEnabled(false);
+            btnDifference.setEnabled(false);
         }
     }
 
@@ -353,14 +391,29 @@ public class RegExAnalyser extends JFrame {
                 btnRemoveAutomaton.setEnabled(true);
                 btnNFAtoDFA.setEnabled(true);
                 btnMinimise.setEnabled(true);
-                // TODO: add other buttons
+                btnComplement.setEnabled(true);
+                btnUnion.setEnabled(false);
+                btnIntersection.setEnabled(false);
+                btnDifference.setEnabled(false);
                 resetOutputPanel();
                 showAutomaton(minIndex);
+            } else if (selectedAutomatons.size() == 2) {
+                btnRemoveAutomaton.setEnabled(false);
+                btnNFAtoDFA.setEnabled(false);
+                btnMinimise.setEnabled(false);
+                btnComplement.setEnabled(false);
+                btnUnion.setEnabled(true);
+                btnIntersection.setEnabled(true);
+                btnDifference.setEnabled(true);
+                resetOutputPanel();
             } else {
                 btnRemoveAutomaton.setEnabled(false);
                 btnNFAtoDFA.setEnabled(false);
                 btnMinimise.setEnabled(false);
-                // TODO: add other buttons
+                btnUnion.setEnabled(false);
+                btnIntersection.setEnabled(false);
+                btnComplement.setEnabled(false);
+                btnDifference.setEnabled(false);
             }
         }
     }
@@ -392,6 +445,7 @@ public class RegExAnalyser extends JFrame {
             } else {
                 btnRemoveRegex.setEnabled(false);
                 btnRegexToDFA.setEnabled(false);
+                // TODO: add buttons
             }
         }
     }
@@ -450,6 +504,26 @@ public class RegExAnalyser extends JFrame {
                 minimise();
             }
         });
+        btnComplement.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent event) {
+                complement();
+            }
+        });
+        btnUnion.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent event) {
+                union();
+            }
+        });
+        btnIntersection.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent event) {
+                intersection();
+            }
+        });
+        btnDifference.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent event) {
+                difference();
+            }
+        });
     }
 
     public void addComponentsToPane(Container pane) {
@@ -470,6 +544,7 @@ public class RegExAnalyser extends JFrame {
         leftPanel.add(btnNewRegex, "growx");
         leftPanel.add(btnRegexToDFA, "growx");
         leftPanel.add(btnRemoveRegex, "growx");
+        // TODO: add buttons
 
         btnRegexToDFA.setEnabled(false);
         btnRemoveRegex.setEnabled(false);
@@ -510,12 +585,19 @@ public class RegExAnalyser extends JFrame {
         rightPanel.add(btnNewAutomaton, "growx");
         rightPanel.add(btnNFAtoDFA, "growx");
         rightPanel.add(btnMinimise, "growx");
+        rightPanel.add(btnComplement, "growx");
+        rightPanel.add(btnUnion, "growx");
+        rightPanel.add(btnIntersection, "growx");
+        rightPanel.add(btnDifference, "growx");
         rightPanel.add(btnRemoveAutomaton, "growx");
 
         btnNFAtoDFA.setEnabled(false);
         btnRemoveAutomaton.setEnabled(false);
         btnMinimise.setEnabled(false);
-        // TODO: add buttons
+        btnUnion.setEnabled(false);
+        btnIntersection.setEnabled(false);
+        btnComplement.setEnabled(false);
+        btnDifference.setEnabled(false);
 
         pane.setLayout(new BorderLayout(10, 10));
         pane.add(leftPanel, BorderLayout.WEST);
