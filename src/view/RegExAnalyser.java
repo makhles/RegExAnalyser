@@ -38,17 +38,21 @@ public class RegExAnalyser extends JFrame {
 
     private static final long serialVersionUID = 1L;
     private static final int HEIGHT = 620;
+    private static final int MIDDLE_PANEL_WIDTH = 500;
+
     private Controller controller;
     private JTextArea regexInputArea;
     private JPanel inputPanel;
     private JPanel outputPanel;
+    private JTable inputTable;
 
-    private JButton btnNewRegex;
-    private JButton btnNewAutomaton;
+    private JButton btnNewRegex = new JButton("New regex");
+    private JButton btnNewAutomaton = new JButton("New automaton");
     private JButton btnAddRegex = new JButton("Add");
     private JButton btnAddAutomaton = new JButton("Add");;
     private JButton btnRegexToDFA = new JButton("Convert to DFA");
     private JButton btnRemoveRegex = new JButton("Remove");
+    private JButton btnRemoveAutomaton = new JButton("Remove");
 
     private JList<String> regexList;
     private JList<String> automatonsList;
@@ -58,10 +62,19 @@ public class RegExAnalyser extends JFrame {
     private DefaultListModel<String> automatonListModel;
 
     private static Set<Character> regexAllowedSymbols = new HashSet<>();
+    private static Set<Character> vocabularySymbols = new HashSet<>();
+    private static Set<Character> stateSymbols = new HashSet<>();
     static {
         regexAllowedSymbols.addAll(Arrays.asList('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
                 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8',
                 '9', '(', ')', '|', '*', '+', '?'));
+
+        vocabularySymbols.addAll(
+                Arrays.asList('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
+                        's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'));
+
+        stateSymbols.addAll(Arrays.asList('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
+                'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'));
     }
 
     private void removeRegex() {
@@ -92,10 +105,120 @@ public class RegExAnalyser extends JFrame {
         }
 
         JScrollPane tableScroller = new JScrollPane(table);
-        tableScroller.setPreferredSize(new Dimension(380, 200));
+        tableScroller.setPreferredSize(new Dimension(MIDDLE_PANEL_WIDTH - 20, 200));
 
         cleanOutputPanel();
         outputPanel.add(tableScroller);
+    }
+
+    private void addAutomaton() {
+        DefaultTableModel model = (DefaultTableModel) inputTable.getModel();
+        List<String> states = new ArrayList<>();
+        List<String> vocabulary = new ArrayList<>();
+        String initialState = null;
+        String errorMessage = null;
+
+        // Get states
+        for (int row = 1; row < model.getRowCount(); row++) {
+            String value = (String) model.getValueAt(row, 2);
+            if (value != null && !value.isEmpty()) {
+                if (!stateSymbols.contains(value.charAt(0))) {
+                    errorMessage = "The symbol '" + value + "' is not allowed as a state.";
+                    showInputErrorMessage(errorMessage);
+                    return;
+                }
+                states.add(value);
+            } else {
+                break; // No more states
+            }
+        }
+        if (states.isEmpty()) {
+            errorMessage = "There are no states in the automaton.";
+            showInputErrorMessage(errorMessage);
+            return;
+        }
+
+        // Get vocabulary
+        for (int col = 3; col < model.getColumnCount(); col++) {
+            String value = (String) model.getValueAt(0, col);
+            if (value != null && !value.isEmpty()) {
+                if (!vocabularySymbols.contains(value.charAt(0))) {
+                    errorMessage = "The symbol '" + value + "' is not allowed in the vocabulary.";
+                    showInputErrorMessage(errorMessage);
+                    return;
+                }
+                vocabulary.add(value);
+            } else {
+                break; // Vocabulary is over
+            }
+        }
+        if (vocabulary.isEmpty()) {
+            errorMessage = "There are no symbols in the vocabulary.";
+            JOptionPane.showMessageDialog(this, errorMessage, "Input error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        List<List<String>> transitions = new ArrayList<>();
+        transitions.add(vocabulary);
+
+        // Get transitions
+        for (int row = 1; row <= states.size(); row++) {
+            List<String> rowTransitions = new ArrayList<>();
+            for (int col = 0; col < vocabulary.size() + 3; col++) {
+                String value = (String) model.getValueAt(row, col);
+
+                // Initial state column
+                if (col == 0 && value != null && value.equals("->")) {
+                    initialState = (String) model.getValueAt(row, 2);
+                    ;
+                }
+
+                // Accepting state column
+                if (col == 1) {
+                    if (value != null && value.equals("*")) {
+                        rowTransitions.add("*");
+                    } else {
+                        rowTransitions.add("");
+                    }
+                }
+
+                // State column
+                if (col == 2) {
+                    rowTransitions.add(value);
+                }
+
+                // Transitions columns
+                if (col > 2) {
+                    if (value != null && !value.isEmpty()) {
+                        if (states.contains(value)) {
+                            rowTransitions.add(value);
+                        } else {
+                            errorMessage = "State " + value + " at cell (" + row + "," + col + ") is invalid.";
+                            showInputErrorMessage(errorMessage);
+                            return;
+                        }
+                    } else {
+                        rowTransitions.add("-");
+                    }
+                }
+            }
+            transitions.add(rowTransitions);
+        }
+        if (initialState == null) {
+            errorMessage = "This automaton has no initial state.";
+            showInputErrorMessage(errorMessage);
+            return;
+        }
+
+        // Everything looks fine...
+        int index = controller.createAutomaton(transitions, initialState);
+        automatonListModel.addElement("AF " + index);
+        automatonsList.setSelectedIndex(index);
+        btnRemoveAutomaton.setEnabled(true);
+    }
+
+    private void showInputErrorMessage(String message) {
+        JOptionPane.showMessageDialog(this, message, "Input error", JOptionPane.ERROR_MESSAGE);
     }
 
     private void convertRegexToDFA() {
@@ -108,25 +231,20 @@ public class RegExAnalyser extends JFrame {
     private void addRegularExpression() {
         String input = regexInputArea.getText();
 
-        boolean regexIsValid = true;
         for (int i = 0; i < input.length(); i++) {
             char symbol = input.charAt(i);
             if (!regexAllowedSymbols.contains(symbol)) {
-                JOptionPane.showMessageDialog(this, "The symbol '" + symbol + "' is not allowed.", "Input error",
-                        JOptionPane.ERROR_MESSAGE);
-                regexIsValid = false;
-                break;
+                String errorMessage = "The symbol '" + symbol + "' is not allowed.";
+                showInputErrorMessage(errorMessage);
+                return;
             }
         }
 
-        if (regexIsValid) {
-            int index = controller.createRegularExpression(input);
-            String name = "Regex " + index;
-            regexListModel.addElement(name);
-            regexList.setSelectedIndex(index);
-            btnRegexToDFA.setEnabled(true);
-            btnRemoveRegex.setEnabled(true);
-        }
+        int index = controller.createRegularExpression(input);
+        regexListModel.addElement("Regex " + index);
+        regexList.setSelectedIndex(index);
+        btnRegexToDFA.setEnabled(true);
+        btnRemoveRegex.setEnabled(true);
     }
 
     private void createListSelectionListeners() {
@@ -172,6 +290,8 @@ public class RegExAnalyser extends JFrame {
         // Regex related
         btnNewRegex.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent event) {
+                regexList.clearSelection();
+                automatonsList.clearSelection();
                 regexInputPanel();
             }
         });
@@ -194,7 +314,14 @@ public class RegExAnalyser extends JFrame {
         // Automaton related
         btnNewAutomaton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent event) {
+                regexList.clearSelection();
+                automatonsList.clearSelection();
                 automatonInputPanel();
+            }
+        });
+        btnAddAutomaton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent event) {
+                addAutomaton();
             }
         });
     }
@@ -204,8 +331,6 @@ public class RegExAnalyser extends JFrame {
         JPanel leftPanel = new JPanel(new MigLayout("wrap 1", "[c]", "[c]"));
         leftPanel.setBorder(new TitledBorder("Regular Expressions"));
         leftPanel.setPreferredSize(new Dimension(200, HEIGHT));
-
-        btnNewRegex = new JButton("New RegEx");
 
         regexList = new JList<>();
         regexList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -227,25 +352,25 @@ public class RegExAnalyser extends JFrame {
 
         inputPanel = new JPanel();
         inputPanel.setBorder(new TitledBorder("Input"));
+        inputPanel.setPreferredSize(new Dimension(MIDDLE_PANEL_WIDTH - 5, HEIGHT / 2 - 5));
         resetInputPanel();
 
         outputPanel = new JPanel();
         outputPanel.setBorder(new TitledBorder("Output"));
+        outputPanel.setPreferredSize(new Dimension(MIDDLE_PANEL_WIDTH - 5, HEIGHT / 2 - 5));
         resetOutputPanel();
 
         JPanel middlePanel = new JPanel();
         middlePanel.setLayout(new BoxLayout(middlePanel, BoxLayout.Y_AXIS));
         middlePanel.add(inputPanel);
         middlePanel.add(outputPanel);
-        middlePanel.setPreferredSize(new Dimension(400, HEIGHT));
+        middlePanel.setPreferredSize(new Dimension(MIDDLE_PANEL_WIDTH, HEIGHT));
 
         // ---- Right Panel -----------------------------------------
 
         JPanel rightPanel = new JPanel(new MigLayout("wrap 1", "[c]", "[c]"));
         rightPanel.setBorder(new TitledBorder("Automatons"));
         rightPanel.setPreferredSize(new Dimension(200, HEIGHT));
-
-        btnNewAutomaton = new JButton("New Automaton");
 
         automatonsList = new JList<>();
         automatonsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -257,6 +382,9 @@ public class RegExAnalyser extends JFrame {
         rightScrollPane.setPreferredSize(new Dimension(180, 400));
         rightPanel.add(rightScrollPane);
         rightPanel.add(btnNewAutomaton, "growx");
+        rightPanel.add(btnRemoveAutomaton, "growx");
+
+        btnRemoveAutomaton.setEnabled(false);
 
         pane.setLayout(new BorderLayout(10, 10));
         pane.add(leftPanel, BorderLayout.WEST);
@@ -266,7 +394,7 @@ public class RegExAnalyser extends JFrame {
 
     private void regexInputPanel() {
         JPanel regexInputPanel = new JPanel(new MigLayout("", "[l][r]", "[c][c][c]"));
-        regexInputArea = new JTextArea(3, 32);
+        regexInputArea = new JTextArea(5, 42);
 
         regexInputPanel.add(new JLabel("Enter the regular expression:"), "span,wrap");
         regexInputPanel.add(regexInputArea, "span,wrap");
@@ -281,11 +409,23 @@ public class RegExAnalyser extends JFrame {
     private void automatonInputPanel() {
         JPanel automatonInputPanel = new JPanel(new MigLayout("", "[l][r]", "[c][c][c]"));
 
-        DefaultTableModel model = new DefaultTableModel(11, 7);
-        JTable table = new JTable(model);
-        table.setFillsViewportHeight(false);
-        JScrollPane tableScroller = new JScrollPane(table);
-        tableScroller.setPreferredSize(new Dimension(380, 200));
+        DefaultTableModel model = new DefaultTableModel(0, 8);
+        model.addRow(new Object[] { "Initial", "Accepting", "\u03B4", "", "", "", "", "" });
+        for (int i = 0; i < 10; i++) {
+            model.addRow(new Object[] { "", "", "", "", "", "", "", "" });
+        }
+
+        inputTable = new JTable(model);
+        inputTable.setFillsViewportHeight(false);
+
+        // Aligns every cell in the table in the center
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        for (int col = 0; col < model.getColumnCount(); col++) {
+            inputTable.getColumnModel().getColumn(col).setCellRenderer(centerRenderer);
+        }
+        JScrollPane tableScroller = new JScrollPane(inputTable);
+        tableScroller.setPreferredSize(new Dimension(MIDDLE_PANEL_WIDTH - 20, 200));
 
         automatonInputPanel.add(new JLabel("Enter the automaton:"), "span,wrap");
         automatonInputPanel.add(tableScroller, "span,wrap");

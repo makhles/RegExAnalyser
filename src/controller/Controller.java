@@ -105,7 +105,7 @@ public class Controller {
         for (int row = 1; row < transitions.size(); row++) {
             fromState = new State(transitions.get(row).get(1));
             toStates = new ArrayList<>();
-            if (transitions.get(row).get(0) == "*") {
+            if (transitions.get(row).get(0).equals("*")) {
                 automaton.addAcceptingState(fromState);
             }
             for (int col = 2; col < transitions.get(row).size(); col++) {
