@@ -50,11 +50,12 @@ public class RegExAnalyser extends JFrame {
     private JTable inputTable;
 
     private JButton btnNewRegex = new JButton("New regex");
-    private JButton btnNewAutomaton = new JButton("New automaton");
     private JButton btnAddRegex = new JButton("Add");
-    private JButton btnAddAutomaton = new JButton("Add");;
     private JButton btnRegexToDFA = new JButton("Convert to DFA");
     private JButton btnRemoveRegex = new JButton("Remove");
+    private JButton btnEquivalence = new JButton("Equivalence");
+    private JButton btnNewAutomaton = new JButton("New automaton");
+    private JButton btnAddAutomaton = new JButton("Add");;
     private JButton btnRemoveAutomaton = new JButton("Remove");
     private JButton btnNFAtoDFA = new JButton("NFA to DFA");
     private JButton btnMinimise = new JButton("Minimise");
@@ -85,6 +86,12 @@ public class RegExAnalyser extends JFrame {
 
         stateSymbols.addAll(Arrays.asList('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
                 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'));
+    }
+
+    private void equivalence() {
+        int[] indices = regexList.getSelectedIndices();
+        String result = controller.checkEquivalenceOfRegularLanguages(indices[0], indices[1]);
+        showInformationMessage(result);
     }
 
     private void difference() {
@@ -151,9 +158,9 @@ public class RegExAnalyser extends JFrame {
             }
             addAutomaton(minIndex, controller.automatonName(minIndex));
         } catch (AutomatonAlreadyMinimumException e) {
-            showInputWarningMessage(e.message());
+            showWarningMessage(e.message());
         } catch (AutomatonIsEmptyException e) {
-            showInputWarningMessage(e.message());
+            showWarningMessage(e.message());
         }
     }
 
@@ -164,7 +171,7 @@ public class RegExAnalyser extends JFrame {
             String name = "DFA " + index;
             addAutomaton(index, name);
         } catch (AutomatonAlreadyDeterministicException e) {
-            showInputWarningMessage(e.message());
+            showWarningMessage(e.message());
         }
     }
 
@@ -236,7 +243,7 @@ public class RegExAnalyser extends JFrame {
             if (value != null && !value.isEmpty()) {
                 if (!stateSymbols.contains(value.charAt(0))) {
                     errorMessage = "The symbol '" + value + "' is not allowed as a state.";
-                    showInputErrorMessage(errorMessage);
+                    showErrorMessage(errorMessage);
                     return;
                 }
                 states.add(value);
@@ -246,7 +253,7 @@ public class RegExAnalyser extends JFrame {
         }
         if (states.isEmpty()) {
             errorMessage = "There are no states in the automaton.";
-            showInputErrorMessage(errorMessage);
+            showErrorMessage(errorMessage);
             return;
         }
 
@@ -256,7 +263,7 @@ public class RegExAnalyser extends JFrame {
             if (value != null && !value.isEmpty()) {
                 if (!vocabularySymbols.contains(value.charAt(0))) {
                     errorMessage = "The symbol '" + value + "' is not allowed in the vocabulary.";
-                    showInputErrorMessage(errorMessage);
+                    showErrorMessage(errorMessage);
                     return;
                 }
                 vocabulary.add(value);
@@ -304,7 +311,7 @@ public class RegExAnalyser extends JFrame {
                         if (value.length() > 1) {
                             if (value.charAt(0) == ',') {
                                 errorMessage = "State " + value + " at cell (" + row + "," + col + ") is invalid.";
-                                showInputErrorMessage(errorMessage);
+                                showErrorMessage(errorMessage);
                                 return;
                             }
                             boolean validState = true;
@@ -322,7 +329,7 @@ public class RegExAnalyser extends JFrame {
                                 rowTransitions.add(value);
                             } else {
                                 errorMessage = "State " + value + " at cell (" + row + "," + col + ") is invalid.";
-                                showInputErrorMessage(errorMessage);
+                                showErrorMessage(errorMessage);
                                 return;
                             }
                         }
@@ -335,7 +342,7 @@ public class RegExAnalyser extends JFrame {
         }
         if (initialState == null) {
             errorMessage = "This automaton has no initial state.";
-            showInputErrorMessage(errorMessage);
+            showErrorMessage(errorMessage);
             return;
         }
 
@@ -352,14 +359,18 @@ public class RegExAnalyser extends JFrame {
         btnNFAtoDFA.setEnabled(true);
     }
 
-    private void showInputErrorMessage(String message) {
+    private void showErrorMessage(String message) {
         JOptionPane.showMessageDialog(this, message, "Input error", JOptionPane.ERROR_MESSAGE);
     }
 
-    private void showInputWarningMessage(String message) {
+    private void showWarningMessage(String message) {
         JOptionPane.showMessageDialog(this, message, "Warning", JOptionPane.WARNING_MESSAGE);
     }
 
+    private void showInformationMessage(String message) {
+        JOptionPane.showMessageDialog(this, message, "Information", JOptionPane.INFORMATION_MESSAGE);
+    }
+    
     private void convertRegexToDFA() {
         int regexIndex = regexList.getSelectedIndex();
         int index = controller.convertRegExToAutomaton(regexIndex);
@@ -374,7 +385,7 @@ public class RegExAnalyser extends JFrame {
             char symbol = input.charAt(i);
             if (!regexAllowedSymbols.contains(symbol)) {
                 String errorMessage = "The symbol '" + symbol + "' is not allowed.";
-                showInputErrorMessage(errorMessage);
+                showErrorMessage(errorMessage);
                 return;
             }
         }
@@ -458,8 +469,9 @@ public class RegExAnalyser extends JFrame {
             regexInputPanel();
             automatonList.clearSelection();
             if (selectedRegexes.size() == 1) {
-                btnRemoveRegex.setEnabled(true);
                 btnRegexToDFA.setEnabled(true);
+                btnEquivalence.setEnabled(false);
+                btnRemoveRegex.setEnabled(true);
                 regexInputArea.setText(controller.getRegexInputFor(minIndex));
                 int index = controller.getAutomatonForRegex(minIndex);
                 if (index == -1) {
@@ -467,10 +479,13 @@ public class RegExAnalyser extends JFrame {
                 } else {
                     showAutomaton(index);
                 }
+            } else if (selectedRegexes.size() == 2) {
+                btnEquivalence.setEnabled(true);
+                resetOutputPanel();
             } else {
-                btnRemoveRegex.setEnabled(false);
                 btnRegexToDFA.setEnabled(false);
-                // TODO: add buttons
+                btnEquivalence.setEnabled(false);
+                btnRemoveRegex.setEnabled(false);
             }
         }
     }
@@ -498,6 +513,11 @@ public class RegExAnalyser extends JFrame {
         btnRemoveRegex.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent event) {
                 removeRegex();
+            }
+        });
+        btnEquivalence.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent event) {
+                equivalence();
             }
         });
 
@@ -558,7 +578,7 @@ public class RegExAnalyser extends JFrame {
         leftPanel.setPreferredSize(new Dimension(200, HEIGHT));
 
         regexList = new JList<>();
-        regexList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        regexList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         regexList.setModel(regexListModel);
         regexList.setLayoutOrientation(JList.VERTICAL);
         regexList.setVisibleRowCount(-1);
@@ -569,9 +589,10 @@ public class RegExAnalyser extends JFrame {
         leftPanel.add(btnNewRegex, "growx");
         leftPanel.add(btnRegexToDFA, "growx");
         leftPanel.add(btnRemoveRegex, "growx");
-        // TODO: add buttons
+        leftPanel.add(btnEquivalence, "growx");
 
         btnRegexToDFA.setEnabled(false);
+        btnEquivalence.setEnabled(false);
         btnRemoveRegex.setEnabled(false);
 
         // ---- Middle Panel -----------------------------------------

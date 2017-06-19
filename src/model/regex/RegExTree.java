@@ -118,4 +118,8 @@ public class RegExTree {
     public void setName(String name) {
         this.name = name;
     }
+
+    public String name() {
+        return name;
+    }
 }

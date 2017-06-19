@@ -520,6 +520,9 @@ public class Controller {
     public String checkEquivalenceOfRegularLanguages(int indexA, int indexB) {
         System.out.println("Checking equivalence of " + indexA + " and " + indexB);
 
+        String nameA = trees.get(indexA).name();
+        String nameB = trees.get(indexB).name();
+        
         Automaton automatonA = trees.get(indexA).getDfa();
         indexA = automatons.indexOf(automatonA);
         if (indexA == -1) {
@@ -530,7 +533,7 @@ public class Controller {
             automatonA = automatons.get(indexA);
         } catch (AutomatonAlreadyMinimumException e) {
             System.out.println("Automaton is already minimum.");
-            removeLastAutomaton();
+//            removeLastAutomaton();
         }
 
         Automaton automatonB = trees.get(indexB).getDfa();
@@ -543,29 +546,31 @@ public class Controller {
             automatonB = automatons.get(indexB);
         } catch (AutomatonAlreadyMinimumException e) {
             System.out.println("Automaton is already minimum.");
-            removeLastAutomaton();
+//            removeLastAutomaton();
         }
 
         // automatonB.renameStatesBasedOn(automatonA);
 
         Automaton AminusB = automatons.get(difference(indexA, indexB));
-        System.out.println("A minus B:");
+        AminusB.setName(nameA + " \\ " + nameB);
+        System.out.println(nameA + " \\ " + nameB + ":");
         printAutomaton(addAutomaton(AminusB));
 
         System.out.println();
         Automaton BminusA = automatons.get(difference(indexB, indexA));
-        System.out.println("B minus A:");
+        BminusA.setName(nameB + " \\ " + nameA);
+        System.out.println(nameB + " \\ " + nameA + ":");
         printAutomaton(addAutomaton(BminusA));
         String equality = null;
 
         if (AminusB.isEmpty() && BminusA.isEmpty()) {
-            equality = "A == B";
+            equality = nameA + " \u2261 " + nameB;
         } else if (AminusB.isEmpty() && !BminusA.isEmpty()) {
-            equality = "A is in B";
+            equality = nameA + " \u2286 " + nameB;
         } else if (!AminusB.isEmpty() && BminusA.isEmpty()) {
-            equality = "B is in A";
+            equality = nameB + " \u2286 " + nameA;
         } else {
-            equality = "A is not in B and B is not in A";
+            equality = nameA + " \u2288 " + nameB + " and " + nameB + " \u2288 " + nameA;
         }
         System.out.println(equality);
         return equality;
