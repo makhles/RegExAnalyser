@@ -156,11 +156,13 @@ public class Controller {
      */
     public int minimise(int index) throws AutomatonAlreadyMinimumException, AutomatonIsEmptyException {
         Automaton automaton = automatons.get(index);
+        boolean wasDeterminised = false;
 
         if (automaton.isNonDeterministic()) {
             System.out.println(NON_DETERMINISTIC);
             index = determinise(index);
             automaton = automatons.get(index);
+            wasDeterminised = true;
         } else if (automaton.isMinimum()) {
             throw new AutomatonAlreadyMinimumException();
         }
@@ -168,13 +170,18 @@ public class Controller {
         // Creates a copy automaton so that it's safe to
         // remove unreachable and dead states
         automaton = new Automaton(automaton);
-        index = addAutomaton(automaton);
 
         try {
             removeUnreachableStates(automaton);
             removeDeadStates(automaton);
             index = mergeEquivalentStates(automaton);
-        } catch (Exception e) {
+        } catch (AutomatonAlreadyMinimumException e) {
+            if (wasDeterminised) {
+                return index;
+            } else {
+                throw e;
+            }
+        } catch (AutomatonIsEmptyException e) {
             throw e;
         }
 
@@ -193,9 +200,8 @@ public class Controller {
      *            removed.
      */
     private void removeUnreachableStates(Automaton automaton) {
-//        System.out.print("Removing unreachable states from " + index + "... ");
+        System.out.print("Removing unreachable states");
 
-//        Automaton automaton = automatons.get(index);
         Set<State> unreachable = new HashSet<>(automaton.states());
         Queue<State> toBeVisited = new LinkedList<>();
 
@@ -230,9 +236,8 @@ public class Controller {
      *            - the automaton from which any dead states shall be removed.
      */
     private void removeDeadStates(Automaton automaton) throws AutomatonIsEmptyException {
-//        System.out.print("Removing dead states from " + index + "... ");
+        System.out.print("Removing dead states");
 
-//        Automaton automaton = automatons.get(index);
         if (automaton.states().isEmpty()) {
             throw new AutomatonIsEmptyException();
         }
@@ -264,9 +269,8 @@ public class Controller {
     }
 
     private int mergeEquivalentStates(Automaton automaton) throws AutomatonIsEmptyException, AutomatonAlreadyMinimumException {
-//        System.out.print("Merging equivalent states of " + index + "... ");
+        System.out.print("Merging equivalent states");
 
-//        Automaton automaton = automatons.get(index);
         if (automaton.states().isEmpty()) {
             throw new AutomatonIsEmptyException();
         }
@@ -639,9 +643,9 @@ public class Controller {
         // Renames the states of B based on states of A
         System.out.println("Renaming states of automaton " + indexB + ":");
         automatonB = automatonB.renameStatesBasedOn(automatonA);
-        indexB = addAutomaton(automatonB);
-        System.out.println("Renamed automaton (" + indexB + "):");
-        printAutomaton(indexB);
+//        indexB = addAutomaton(automatonB);
+        System.out.println("Renamed automaton:");
+        printAutomaton(automatonB);
 
         // Vocabulary
         Set<String> vocabulary = new LinkedHashSet<>();

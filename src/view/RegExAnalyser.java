@@ -98,8 +98,17 @@ public class RegExAnalyser extends JFrame {
     }
 
     private void union() {
-        // TODO Auto-generated method stub
-
+        int index;
+        String name;
+        int[] indices = automatonList.getSelectedIndices();
+        if (automatonList.getAnchorSelectionIndex() == indices[1]) {
+            index = controller.union(indices[0], indices[1]);
+            name = "NFA " + index + ": " + indices[0] + "+" + indices[1];
+        } else {
+            index = controller.union(indices[1], indices[0]);
+            name = "NFA " + index + ": " + indices[1] + "+" + indices[0];
+        }
+        addAutomaton(index, name);
     }
 
     private void complement() {
@@ -112,19 +121,23 @@ public class RegExAnalyser extends JFrame {
             name = "DFA " + index;
             addAutomaton(index, name);
         }
-        name = "DFA " + complementIndex + "(not " + index + ")";
+        name = "DFA " + complementIndex + " (not " + index + ")";
         addAutomaton(complementIndex, name);
     }
 
     private void minimise() {
         try {
-            int lastIndex = automatonList.getSelectedIndex();
-            int index = controller.minimise(lastIndex);
-            lastIndex++; // Determinised automaton
-            String dfa = "DFA " + lastIndex;
-            String dfaMin = "DFA " + index + " (min)";
-            addAutomaton(lastIndex, dfa);
-            addAutomaton(index, dfaMin);
+            String name;
+            int index = automatonList.getSelectedIndex();
+            int minIndex = controller.minimise(index);
+            if (minIndex > index + 1) {
+                // Input automaton was determinised before minimisation
+                index++;
+                name = "DFA " + index;
+                addAutomaton(index, name);
+            }
+            name = "DFA " + minIndex + " (min)";
+            addAutomaton(minIndex, name);
         } catch (AutomatonAlreadyMinimumException e) {
             showInputWarningMessage(e.message());
         } catch (AutomatonIsEmptyException e) {
@@ -574,7 +587,7 @@ public class RegExAnalyser extends JFrame {
         rightPanel.setPreferredSize(new Dimension(200, HEIGHT));
 
         automatonList = new JList<>();
-        automatonList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        automatonList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         automatonList.setModel(automatonListModel);
         automatonList.setLayoutOrientation(JList.VERTICAL);
         automatonList.setVisibleRowCount(-1);
