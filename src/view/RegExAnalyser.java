@@ -55,8 +55,9 @@ public class RegExAnalyser extends JFrame {
     private JButton btnRemoveAutomaton = new JButton("Remove");
 
     private JList<String> regexList;
-    private JList<String> automatonsList;
-    private List<Integer> selectedRegex;
+    private JList<String> automatonList;
+    private List<Integer> selectedRegexes;
+    private List<Integer> selectedAutomatons;
 
     private DefaultListModel<String> regexListModel;
     private DefaultListModel<String> automatonListModel;
@@ -75,6 +76,18 @@ public class RegExAnalyser extends JFrame {
 
         stateSymbols.addAll(Arrays.asList('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
                 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'));
+    }
+
+    private void removeAutomaton() {
+        int index = automatonList.getSelectedIndex();
+        controller.removeAutomaton(index);
+        automatonListModel.remove(index);
+        resetInputPanel();
+        resetOutputPanel();
+        if (automatonListModel.size() == 0) {
+            btnRemoveAutomaton.setEnabled(false);
+            // TODO: add other buttons
+        }
     }
 
     private void removeRegex() {
@@ -213,7 +226,7 @@ public class RegExAnalyser extends JFrame {
         // Everything looks fine...
         int index = controller.createAutomaton(transitions, initialState);
         automatonListModel.addElement("AF " + index);
-        automatonsList.setSelectedIndex(index);
+        automatonList.setSelectedIndex(index);
         btnRemoveAutomaton.setEnabled(true);
     }
 
@@ -253,6 +266,36 @@ public class RegExAnalyser extends JFrame {
                 onRegexSelection(e);
             }
         });
+        automatonList.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+            public void valueChanged(ListSelectionEvent e) {
+                onAutomatonSelection(e);
+            }
+        });
+    }
+
+    private void onAutomatonSelection(ListSelectionEvent e) {
+        ListSelectionModel lsm = (ListSelectionModel) e.getSource();
+        if (!e.getValueIsAdjusting() && !lsm.isSelectionEmpty()) {
+            int minIndex = lsm.getMinSelectionIndex();
+            int maxIndex = lsm.getMaxSelectionIndex();
+            selectedAutomatons = new ArrayList<>();
+            for (int i = minIndex; i <= maxIndex; i++) {
+                if (lsm.isSelectedIndex(i)) {
+                    selectedAutomatons.add(i);
+                }
+            }
+            resetInputPanel();
+            regexList.clearSelection();
+            if (selectedAutomatons.size() == 1) {
+                btnRemoveAutomaton.setEnabled(true);
+                // TODO: add other buttons
+                resetOutputPanel();
+                showAutomaton(minIndex);
+            } else {
+                btnRemoveAutomaton.setEnabled(false);
+                // TODO: add other buttons
+            }
+        }
     }
 
     private void onRegexSelection(ListSelectionEvent e) {
@@ -260,15 +303,16 @@ public class RegExAnalyser extends JFrame {
         if (!e.getValueIsAdjusting() && !lsm.isSelectionEmpty()) {
             int minIndex = lsm.getMinSelectionIndex();
             int maxIndex = lsm.getMaxSelectionIndex();
-            selectedRegex = new ArrayList<>();
+            selectedRegexes = new ArrayList<>();
             for (int i = minIndex; i <= maxIndex; i++) {
                 if (lsm.isSelectedIndex(i)) {
-                    selectedRegex.add(i);
+                    selectedRegexes.add(i);
                 }
             }
             cleanInputPanel();
             regexInputPanel();
-            if (selectedRegex.size() == 1) {
+            automatonList.clearSelection();
+            if (selectedRegexes.size() == 1) {
                 btnRemoveRegex.setEnabled(true);
                 btnRegexToDFA.setEnabled(true);
                 regexInputArea.setText(controller.getRegexInputFor(minIndex));
@@ -291,7 +335,7 @@ public class RegExAnalyser extends JFrame {
         btnNewRegex.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent event) {
                 regexList.clearSelection();
-                automatonsList.clearSelection();
+                automatonList.clearSelection();
                 regexInputPanel();
             }
         });
@@ -315,13 +359,18 @@ public class RegExAnalyser extends JFrame {
         btnNewAutomaton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent event) {
                 regexList.clearSelection();
-                automatonsList.clearSelection();
+                automatonList.clearSelection();
                 automatonInputPanel();
             }
         });
         btnAddAutomaton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent event) {
                 addAutomaton();
+            }
+        });
+        btnRemoveAutomaton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent event) {
+                removeAutomaton();
             }
         });
     }
@@ -372,13 +421,13 @@ public class RegExAnalyser extends JFrame {
         rightPanel.setBorder(new TitledBorder("Automatons"));
         rightPanel.setPreferredSize(new Dimension(200, HEIGHT));
 
-        automatonsList = new JList<>();
-        automatonsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        automatonsList.setModel(automatonListModel);
-        automatonsList.setLayoutOrientation(JList.VERTICAL);
-        automatonsList.setVisibleRowCount(-1);
+        automatonList = new JList<>();
+        automatonList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        automatonList.setModel(automatonListModel);
+        automatonList.setLayoutOrientation(JList.VERTICAL);
+        automatonList.setVisibleRowCount(-1);
 
-        JScrollPane rightScrollPane = new JScrollPane(automatonsList);
+        JScrollPane rightScrollPane = new JScrollPane(automatonList);
         rightScrollPane.setPreferredSize(new Dimension(180, 400));
         rightPanel.add(rightScrollPane);
         rightPanel.add(btnNewAutomaton, "growx");
@@ -460,8 +509,8 @@ public class RegExAnalyser extends JFrame {
     }
 
     /**
-     * Create the GUI and show it. For thread safety, this method should be invoked from the
-     * event-dispatching thread.
+     * Create the GUI and show it. For thread safety, this method should be
+     * invoked from the event-dispatching thread.
      */
     private void createAndShowGUI() {
         JFrame frame = new JFrame("GridBagLayoutDemo");

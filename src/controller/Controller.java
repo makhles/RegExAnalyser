@@ -54,7 +54,7 @@ public class Controller {
         RegExTree tree = trees.remove(index);
         regexToAutomaton.remove(tree);
     }
-    
+
     public int convertRegExToAutomaton(int index) {
         int automatonIndex;
         RegExTree tree = trees.get(index);
@@ -71,8 +71,7 @@ public class Controller {
 
     public int getAutomatonForRegex(int regexIndex) {
         Automaton automaton = regexToAutomaton.get(trees.get(regexIndex));
-        
-//        Integer automatonIndex = regexToAutomaton.get(regexIndex);
+
         if (automaton == null) {
             return -1;
         }
@@ -80,10 +79,11 @@ public class Controller {
     }
 
     /**
-     * Creates an automaton based on the given table and initial state. The table should be
-     * formatted as such: the first row contains the vocabulary. The second and following rows have
-     * a "*" in the first column if that is an accepting state, followed by the state label in the
-     * second column. In each subsequent column is the state to which the first state of that row
+     * Creates an automaton based on the given table and initial state. The
+     * table should be formatted as such: the first row contains the vocabulary.
+     * The second and following rows have a "*" in the first column if that is
+     * an accepting state, followed by the state label in the second column. In
+     * each subsequent column is the state to which the first state of that row
      * goes to through the symbol in the respective column of the first row.
      * 
      * @param transitions
@@ -188,7 +188,8 @@ public class Controller {
      * Remove all unreachable states from the automaton.
      * 
      * @param automaton
-     *            - the automaton from which any unreachable stat shall be removed.
+     *            - the automaton from which any unreachable stat shall be
+     *            removed.
      */
     private void removeUnreachableStates(int index) {
         System.out.print("Removing unreachable states from " + index + "... ");
@@ -381,8 +382,8 @@ public class Controller {
     }
 
     /**
-     * Converts the automaton referenced by the index parameter into a deterministic automaton and
-     * returns the index to the new automaton.
+     * Converts the automaton referenced by the index parameter into a
+     * deterministic automaton and returns the index to the new automaton.
      * 
      * @param index
      *            - the index to the non-deterministic automaton.
@@ -472,7 +473,8 @@ public class Controller {
     }
 
     /**
-     * Returns the epsilon closure of all states in the given automaton in a map.
+     * Returns the epsilon closure of all states in the given automaton in a
+     * map.
      * 
      * @param nfa
      *            - the automaton whose epsilon closure is wished.
@@ -491,7 +493,8 @@ public class Controller {
     }
 
     /**
-     * Checks for the equivalence between two regular languages denoted by two regular expressions.
+     * Checks for the equivalence between two regular languages denoted by two
+     * regular expressions.
      * 
      * @param indexA
      *            - the index to the first regular expression tree.
@@ -568,8 +571,8 @@ public class Controller {
     }
 
     /**
-     * Returns the intersection between two automatons. The given automatons shall be made complete
-     * if they're not already so.
+     * Returns the intersection between two automatons. The given automatons
+     * shall be made complete if they're not already so.
      * 
      * @param indexA
      *            - the index to the first automaton.
@@ -585,11 +588,12 @@ public class Controller {
     }
 
     /**
-     * Returns the complement of the given automaton. The given automaton shall be made complete if
-     * it's not already so.
+     * Returns the complement of the given automaton. The given automaton shall
+     * be made complete if it's not already so.
      * 
      * @param index
-     *            - the index to the automaton from which the complement is wished.
+     *            - the index to the automaton from which the complement is
+     *            wished.
      * @return the index to the complemented automaton.
      */
     public int complement(int index) {
@@ -711,7 +715,8 @@ public class Controller {
     }
 
     /**
-     * Copies the transitions from the source automaton to the destination automaton.
+     * Copies the transitions from the source automaton to the destination
+     * automaton.
      * 
      * @param source
      *            - the automaton whose transitions shall be copied.
@@ -773,5 +778,15 @@ public class Controller {
 
     public String getRegexInputFor(int index) {
         return trees.get(index).input();
+    }
+
+    public void removeAutomaton(int index) {
+        Automaton removedAutomaton = automatons.remove(index);
+        for (Map.Entry<RegExTree, Automaton> entry : regexToAutomaton.entrySet()) {
+            if (entry.getValue().equals(removedAutomaton)) {
+                regexToAutomaton.remove(entry.getKey());
+                break;
+            }
+        }
     }
 }
