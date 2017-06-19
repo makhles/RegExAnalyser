@@ -80,11 +80,10 @@ public class Controller {
     }
 
     /**
-     * Creates an automaton based on the given table and initial state. The
-     * table should be formatted as such: the first row contains the vocabulary.
-     * The second and following rows have a "*" in the first column if that is
-     * an accepting state, followed by the state label in the second column. In
-     * each subsequent column is the state to which the first state of that row
+     * Creates an automaton based on the given table and initial state. The table should be
+     * formatted as such: the first row contains the vocabulary. The second and following rows have
+     * a "*" in the first column if that is an accepting state, followed by the state label in the
+     * second column. In each subsequent column is the state to which the first state of that row
      * goes to through the symbol in the respective column of the first row.
      * 
      * @param transitions
@@ -97,8 +96,6 @@ public class Controller {
         List<State> toStates = null;
         Set<String> labels = null;
         State fromState = null;
-
-        checkForConsistency(transitions, initialState); // TODO
 
         String name = String.valueOf(automatons.size());
         Automaton automaton = new Automaton(name, transitions.get(0));
@@ -121,18 +118,7 @@ public class Controller {
             }
             automaton.addTransitions(fromState, toStates);
         }
-        checkForCompleteness(automaton); // TODO
         return addAutomaton(automaton);
-    }
-
-    private void checkForConsistency(List<List<String>> transitions, String initialState) {
-        // TODO Auto-generated method stub
-
-    }
-
-    private void checkForCompleteness(Automaton automaton) {
-        // TODO Auto-generated method stub
-
     }
 
     /**
@@ -192,19 +178,14 @@ public class Controller {
         return index;
     }
 
-    private Automaton removeLastAutomaton() {
-        return automatons.remove(automatons.size() - 1);
-    }
-
     /**
      * Remove all unreachable states from the automaton.
      * 
      * @param automaton
-     *            - the automaton from which any unreachable stat shall be
-     *            removed.
+     *            - the automaton from which any unreachable stat shall be removed.
      */
     private void removeUnreachableStates(Automaton automaton) {
-        System.out.print("Removing unreachable states");
+        System.out.print("Removing unreachable states... ");
 
         Set<State> unreachable = new HashSet<>(automaton.states());
         Queue<State> toBeVisited = new LinkedList<>();
@@ -240,7 +221,7 @@ public class Controller {
      *            - the automaton from which any dead states shall be removed.
      */
     private void removeDeadStates(Automaton automaton) throws AutomatonIsEmptyException {
-        System.out.print("Removing dead states");
+        System.out.print("Removing dead states... ");
 
         if (automaton.states().isEmpty()) {
             throw new AutomatonIsEmptyException();
@@ -274,7 +255,7 @@ public class Controller {
 
     private int mergeEquivalentStates(Automaton automaton, int size)
             throws AutomatonIsEmptyException, AutomatonAlreadyMinimumException {
-        System.out.print("Merging equivalent states");
+        System.out.print("Merging equivalent states... ");
 
         if (automaton.states().isEmpty()) {
             throw new AutomatonIsEmptyException();
@@ -393,8 +374,8 @@ public class Controller {
     }
 
     /**
-     * Converts the automaton referenced by the index parameter into a
-     * deterministic automaton and returns the index to the new automaton.
+     * Converts the automaton referenced by the index parameter into a deterministic automaton and
+     * returns the index to the new automaton.
      * 
      * @param index
      *            - the index to the non-deterministic automaton.
@@ -488,8 +469,7 @@ public class Controller {
     }
 
     /**
-     * Returns the epsilon closure of all states in the given automaton in a
-     * map.
+     * Returns the epsilon closure of all states in the given automaton in a map.
      * 
      * @param nfa
      *            - the automaton whose epsilon closure is wished.
@@ -508,8 +488,7 @@ public class Controller {
     }
 
     /**
-     * Checks for the equivalence between two regular languages denoted by two
-     * regular expressions.
+     * Checks for the equivalence between two regular languages denoted by two regular expressions.
      * 
      * @param indexA
      *            - the index to the first regular expression tree.
@@ -522,7 +501,7 @@ public class Controller {
 
         String nameA = trees.get(indexA).name();
         String nameB = trees.get(indexB).name();
-        
+
         Automaton automatonA = trees.get(indexA).getDfa();
         indexA = automatons.indexOf(automatonA);
         if (indexA == -1) {
@@ -533,7 +512,7 @@ public class Controller {
             automatonA = automatons.get(indexA);
         } catch (AutomatonAlreadyMinimumException e) {
             System.out.println("Automaton is already minimum.");
-//            removeLastAutomaton();
+            // removeLastAutomaton();
         }
 
         Automaton automatonB = trees.get(indexB).getDfa();
@@ -546,7 +525,7 @@ public class Controller {
             automatonB = automatons.get(indexB);
         } catch (AutomatonAlreadyMinimumException e) {
             System.out.println("Automaton is already minimum.");
-//            removeLastAutomaton();
+            // removeLastAutomaton();
         }
 
         // automatonB.renameStatesBasedOn(automatonA);
@@ -591,8 +570,8 @@ public class Controller {
     }
 
     /**
-     * Returns the intersection between two automatons. The given automatons
-     * shall be made complete if they're not already so.
+     * Returns the intersection between two automatons. The given automatons shall be made complete
+     * if they're not already so.
      * 
      * @param indexA
      *            - the index to the first automaton.
@@ -610,12 +589,11 @@ public class Controller {
     }
 
     /**
-     * Returns the complement of the given automaton. The given automaton shall
-     * be made complete if it's not already so.
+     * Returns the complement of the given automaton. The given automaton shall be made complete if
+     * it's not already so.
      * 
      * @param index
-     *            - the index to the automaton from which the complement is
-     *            wished.
+     *            - the index to the automaton from which the complement is wished.
      * @return the index to the complemented automaton.
      */
     public int complement(int index) {
@@ -666,7 +644,7 @@ public class Controller {
         vocabulary.addAll(automatonB.vocabulary());
         vocabulary.add(Automaton.EPSILON);
 
-        String name = "NFA " + automatons.size() + " ("+ indexA + " \u222A " + indexB + ")";
+        String name = "NFA " + automatons.size() + " (" + indexA + " \u222A " + indexB + ")";
         Automaton automaton = new Automaton(name, new ArrayList<>(vocabulary));
 
         // Transitions
@@ -738,8 +716,7 @@ public class Controller {
     }
 
     /**
-     * Copies the transitions from the source automaton to the destination
-     * automaton.
+     * Copies the transitions from the source automaton to the destination automaton.
      * 
      * @param source
      *            - the automaton whose transitions shall be copied.
@@ -770,16 +747,26 @@ public class Controller {
 
     public Vector<String> columnNamesFromAutomaton(int index) {
         Vector<String> columnNames = new Vector<>();
-        columnNames.add("Initial");
-        columnNames.add("Accepting");
-        columnNames.add("\u03B4");
-        columnNames.addAll(automatons.get(index).vocabulary());
+        for (int i = 0; i < automatons.get(index).vocabulary().size() + 3; i++) {
+            columnNames.add("-");
+        }
+        // columnNames.add("Initial");
+        // columnNames.add("Accepting");
+        // columnNames.add("\u03B4");
+        // columnNames.addAll(automatons.get(index).vocabulary());
         return columnNames;
     }
 
     public Vector<Vector<String>> dataFromAutomaton(int index) {
         Vector<Vector<String>> data = new Vector<>();
         Automaton automaton = automatons.get(index);
+        Vector<String> firstLine = new Vector<>();
+        firstLine.add("Initial");
+        firstLine.add("Accepting");
+        firstLine.add("\u03B4");
+        firstLine.addAll(automaton.vocabulary());
+        data.addElement(firstLine);
+
         for (State state : automaton.states()) {
             Vector<String> row = new Vector<>();
             if (state.equals(automaton.initial())) {
@@ -792,17 +779,24 @@ public class Controller {
             } else {
                 row.add("");
             }
-            row.add(state.labels().toString());
+            row.add(getLabelsFrom(state));
             for (State toState : automaton.transitionsFrom(state)) {
-                // StringBuilder fullLabel = new StringBuilder();
-                // for (String label : toState.labels()) {
-                // fullLabel.append(label);
-                // }
-                row.add(toState.labels().toString());
+                row.add(getLabelsFrom(toState));
             }
             data.add(row);
         }
         return data;
+    }
+
+    private String getLabelsFrom(State state) {
+        StringBuilder stateLabel = new StringBuilder();
+        String prefix = "";
+        for (String label : state.labels()) {
+            stateLabel.append(prefix);
+            prefix = ",";
+            stateLabel.append(label);
+        }
+        return stateLabel.toString();
     }
 
     public String getRegexInputFor(int index) {

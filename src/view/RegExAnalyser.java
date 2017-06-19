@@ -325,7 +325,7 @@ public class RegExAnalyser extends JFrame {
                                 rowTransitions.add(value);
                             }
                         } else {
-                            if (states.contains(value)) {
+                            if (states.contains(value) || value.charAt(0) == '-') {
                                 rowTransitions.add(value);
                             } else {
                                 errorMessage = "State " + value + " at cell (" + row + "," + col + ") is invalid.";
@@ -370,7 +370,7 @@ public class RegExAnalyser extends JFrame {
     private void showInformationMessage(String message) {
         JOptionPane.showMessageDialog(this, message, "Information", JOptionPane.INFORMATION_MESSAGE);
     }
-    
+
     private void convertRegexToDFA() {
         int regexIndex = regexList.getSelectedIndex();
         int index = controller.convertRegExToAutomaton(regexIndex);
@@ -422,6 +422,7 @@ public class RegExAnalyser extends JFrame {
                 }
             }
             resetInputPanel();
+            resetOutputPanel();
             regexList.clearSelection();
             if (selectedAutomatons.size() == 1) {
                 btnRemoveAutomaton.setEnabled(true);
@@ -431,8 +432,7 @@ public class RegExAnalyser extends JFrame {
                 btnUnion.setEnabled(false);
                 btnIntersection.setEnabled(false);
                 btnDifference.setEnabled(false);
-                resetOutputPanel();
-                showAutomaton(minIndex);
+                editAutomaton(minIndex);
             } else if (selectedAutomatons.size() == 2) {
                 btnRemoveAutomaton.setEnabled(false);
                 btnNFAtoDFA.setEnabled(false);
@@ -441,7 +441,6 @@ public class RegExAnalyser extends JFrame {
                 btnUnion.setEnabled(true);
                 btnIntersection.setEnabled(true);
                 btnDifference.setEnabled(true);
-                resetOutputPanel();
             } else {
                 btnRemoveAutomaton.setEnabled(false);
                 btnNFAtoDFA.setEnabled(false);
@@ -480,7 +479,9 @@ public class RegExAnalyser extends JFrame {
                     showAutomaton(index);
                 }
             } else if (selectedRegexes.size() == 2) {
+                btnRegexToDFA.setEnabled(false);
                 btnEquivalence.setEnabled(true);
+                btnRemoveRegex.setEnabled(false);
                 resetOutputPanel();
             } else {
                 btnRegexToDFA.setEnabled(false);
@@ -526,7 +527,7 @@ public class RegExAnalyser extends JFrame {
             public void actionPerformed(ActionEvent event) {
                 regexList.clearSelection();
                 automatonList.clearSelection();
-                automatonInputPanel();
+                createNewAutomaton();
             }
         });
         btnAddAutomaton.addActionListener(new ActionListener() {
@@ -665,7 +666,36 @@ public class RegExAnalyser extends JFrame {
         inputPanel.add(regexInputPanel);
     }
 
-    private void automatonInputPanel() {
+    private void editAutomaton(int index) {
+        JPanel automatonInputPanel = new JPanel(new MigLayout("", "[l][r]", "[c][c][c]"));
+
+        Vector<String> columnNames = controller.columnNamesFromAutomaton(index);
+        Vector<Vector<String>> data = controller.dataFromAutomaton(index);
+
+        DefaultTableModel model = new DefaultTableModel(data, columnNames);
+        inputTable = new JTable(model);
+        inputTable.setFillsViewportHeight(false);
+
+        // Aligns every cell in the table in the center
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        for (int col = 0; col < model.getColumnCount(); col++) {
+            inputTable.getColumnModel().getColumn(col).setCellRenderer(centerRenderer);
+        }
+        JScrollPane tableScroller = new JScrollPane(inputTable);
+        tableScroller.setPreferredSize(new Dimension(MIDDLE_PANEL_WIDTH - 20, 200));
+
+        automatonInputPanel.add(new JLabel("Edit the automaton:"), "span,wrap");
+        automatonInputPanel.add(tableScroller, "span,wrap");
+        automatonInputPanel.add(new JLabel());
+        automatonInputPanel.add(btnAddAutomaton);
+
+        resetOutputPanel();
+        cleanInputPanel();
+        inputPanel.add(automatonInputPanel);
+    }
+
+    private void createNewAutomaton() {
         JPanel automatonInputPanel = new JPanel(new MigLayout("", "[l][r]", "[c][c][c]"));
 
         DefaultTableModel model = new DefaultTableModel(0, 8);
@@ -719,8 +749,8 @@ public class RegExAnalyser extends JFrame {
     }
 
     /**
-     * Create the GUI and show it. For thread safety, this method should be
-     * invoked from the event-dispatching thread.
+     * Create the GUI and show it. For thread safety, this method should be invoked from the
+     * event-dispatching thread.
      */
     private void createAndShowGUI() {
         JFrame frame = new JFrame("GridBagLayoutDemo");
