@@ -88,8 +88,17 @@ public class RegExAnalyser extends JFrame {
     }
 
     private void difference() {
-        // TODO Auto-generated method stub
-
+        int index;
+        int modelSize = automatonListModel.size();
+        int[] indices = automatonList.getSelectedIndices();
+        if (automatonList.getAnchorSelectionIndex() == indices[1]) {
+            index = controller.difference(indices[0], indices[1]);
+        } else {
+            index = controller.difference(indices[1], indices[0]);
+        }
+        for (int i = modelSize; i <= index; i++) {
+            addAutomaton(i, controller.automatonName(i));
+        }
     }
 
     private void intersection() {
