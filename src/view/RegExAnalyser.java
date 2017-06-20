@@ -205,6 +205,7 @@ public class RegExAnalyser extends JFrame {
         if (regexListModel.size() == 0) {
             btnRemoveRegex.setEnabled(false);
             btnRegexToDFA.setEnabled(false);
+            btnEquivalence.setEnabled(false);
         }
     }
 
